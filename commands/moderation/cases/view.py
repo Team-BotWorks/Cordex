@@ -38,7 +38,7 @@ async def run_moderation_cases_view(interaction : Interaction, case_id : int | N
         await format_send(
             interaction,
             MessageType.warning,
-            title    = "No cases found",
+            title    = "No cases found for this guild",
             override = FormatOverride(prefix = False),
         )
         return

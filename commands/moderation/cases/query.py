@@ -128,6 +128,15 @@ async def run_moderation_cases_query(
         ]
 
     if not cases:
+        if not await cases_manager.get_all_cases():
+            await format_send(
+                interaction,
+                MessageType.warning,
+                title    = "No cases found for this guild",
+                override = FormatOverride(prefix = False),
+            )
+            return
+
         await format_send(
             interaction,
             MessageType.warning,
