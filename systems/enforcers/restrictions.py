@@ -1,6 +1,6 @@
 from typing import cast, final, override
 
-from discord import Guild
+from discord import Guild, Object
 from discord.ext.commands import Cog
 from discord.ext.tasks import loop
 
@@ -35,7 +35,8 @@ class RestrictionEnforcer(Cog):
             return 0
 
         for guild_id, command_name in pairs:
-            self.bot.set_command_restriction(guild_id, command_name, None)
+            guild = self.bot.get_guild(guild_id) or cast("Guild", cast("object", Object(id = guild_id)))
+            self.bot.set_command_restriction(guild, command_name, None)
 
         return len(pairs)
 

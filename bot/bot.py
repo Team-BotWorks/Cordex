@@ -225,7 +225,7 @@ class _Tree(CommandTree):
         if user == guild.owner:
             return True
 
-        restriction = client.get_command_restriction(guild.id, command.qualified_name)
+        restriction = client.get_command_restriction(guild, command.qualified_name)
         if restriction is None:
             if is_restriction_required(command):
                 await interaction.response.send_message(
@@ -550,17 +550,17 @@ class Cordex(Bot):
 
     def get_api_commands_cache(self) -> list[APICommand]:
         """
-        ...
+        Get all Discord-side app commands found in the cache.
 
         Returns
         -------
         `list[APICommand]`
-            ...
+            All Discord-side app commands found in the cache.
         """
         return self._api_commands_cache
 
     async def rebuild_api_commands_cache(self) -> None:
-        """..."""
+        """Rebuild the Discord-side app commands cache."""
         self._api_commands_cache.clear()
         await self._build_api_commands_cache()
 
@@ -594,20 +594,38 @@ class Cordex(Bot):
             for key, (users, roles) in grouped.items()
         }
 
-    def get_command_restriction(self, guild_id : int, command_name : str, /) -> Restriction | None:
+    def get_command_restriction(self, guild : Guild, command_name : str, /) -> Restriction | None:
         """
-        ...
+        Get the restrictions for a command.
+
+        Parameters
+        ----------
+        guild : `Guild`
+            The guild to get the restrictions for.
+        command_name : `str`
+            The name of the command to get the restrictions for.
+        /
 
         Returns
         -------
         `Restriction | None`
-            ...
+            The restrictions for the command. Possibly `None` if the command is not restricted or the command was not found.
         """
-        return self._command_restrictions_cache.get((guild_id, command_name))
+        return self._command_restrictions_cache.get((guild.id, command_name))
 
-    def set_command_restriction(self, guild_id : int, command_name : str, restriction : Restriction | None, /) -> None:
-        """..."""
-        key = (guild_id, command_name)
+    def set_command_restriction(self, guild : Guild, command_name : str, restriction : Restriction | None, /) -> None:
+        """
+        Set the restrictions for a command.
+
+        Parameters
+        ----------
+        guild : `Guild`
+            The guild to set the restrictions for.
+        command_name : `str`
+            The name of the command to set the restrictions for.
+        /
+        """
+        key = (guild.id, command_name)
 
         if restriction is None:
             self._command_restrictions_cache.pop(key, None)

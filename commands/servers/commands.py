@@ -73,7 +73,7 @@ def _build_sections(interaction : Interaction, state : _State) -> list[str | Ite
     sections : list[str | Item[UnnamedPaginator]] = []
     for i, (command, mention) in enumerate(zip(commands, mentions, strict = False), start = 1):
         requires_restriction = is_restriction_required(command)
-        is_restricted = interaction.client.get_command_restriction(guild.id, command.qualified_name) is not None
+        is_restricted = interaction.client.get_command_restriction(guild, command.qualified_name) is not None
 
         status = ""
         if is_restricted:
@@ -292,7 +292,7 @@ class _GroupConfigModal(Modal):
 
         affected : CommandList = []
         for command in self._commands:
-            if not force and client.get_command_restriction(guild.id, command.qualified_name) is not None:
+            if not force and client.get_command_restriction(guild, command.qualified_name) is not None:
                 continue
 
             if ignore and not is_restriction_required(command):
