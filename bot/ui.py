@@ -228,7 +228,7 @@ class Modal(BaseModal):
 
     @override
     async def on_submit(self, interaction : "Interaction", /) -> None:
-        ...
+        pass
 
     def add_text(self, text : str, /) -> Self:
         """
