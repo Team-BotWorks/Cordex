@@ -1,7 +1,7 @@
 # pyright: reportImportCycles = false
 
 from asyncio import to_thread
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from inspect import getattr_static, getsource
 from io import BytesIO
 from logging import getLogger as get_logger
@@ -37,7 +37,7 @@ from core.state import (
     is_restriction_required,
 )
 
-from .types import NOT_PASSED, DisplayNameStyle, LambdaInter
+from .types import NOT_PASSED, DisplayNameStyle
 from .ui import Button, LayoutView, Modal, View, button
 
 type _InspectableObject = (
@@ -50,10 +50,11 @@ type _InspectableObject = (
     | CodeType
 )
 
+type _Callback = Callable[[Interaction], Awaitable[None]]
+
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 # Bot & Client Management
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
-
 
 log = get_logger("Cordex")
 
@@ -88,10 +89,10 @@ class _ContextClass(BaseContext["Cordex"]):
 
         return await self.send_file(file_content = content, file_name = "content.txt")
 
-    async def send_button(self, callback : LambdaInter, /) -> Message:
+    async def send_button(self, callback : _Callback, /) -> Message:
         @final
         class _ViewButton(View):
-            def __init__(self, view_callback : LambdaInter, /) -> None:
+            def __init__(self, view_callback : _Callback, /) -> None:
                 super().__init__(timeout = None)
                 self.callback = view_callback
 

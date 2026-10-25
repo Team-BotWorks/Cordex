@@ -1,4 +1,3 @@
-from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -10,8 +9,6 @@ from constants import DisplayNameEffect, DisplayNameFont
 
 if TYPE_CHECKING:
     from typing_extensions import Sentinel as sentinel
-
-    from .bot import Interaction
 else:
     from typing_extensions import (
         sentinel,  # ⸻ For whatever reason, pyright seems to not find the typing-extensions 4.16.0 sentinel function.
@@ -20,8 +17,6 @@ else:
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 # Bot Types
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
-
-type LambdaInter = Callable[[Interaction], Awaitable[None]]
 
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 # NOT_PASSED Sentinel

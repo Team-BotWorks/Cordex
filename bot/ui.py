@@ -1,6 +1,6 @@
 # pyright: reportIncompatibleMethodOverride = false
 # ruff: file-ignore[quoted-annotation]
-from collections.abc import Iterable
+from collections.abc import Awaitable, Callable, Iterable
 from contextlib import suppress
 from typing import TYPE_CHECKING, Self, final, override
 from warnings import warn
@@ -45,8 +45,6 @@ from discord.ui import TextInput as BaseTextInput
 
 from constants import ACCEPTED_NOBG_EMOJI, DENIED_NOBG_EMOJI
 
-from .types import LambdaInter
-
 __all__ = [
     "ActionRow",
     "Button",
@@ -80,7 +78,7 @@ if TYPE_CHECKING:
 # Bot UI
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
-type _OnChoice = LambdaInter
+type _OnChoice = Callable[[Interaction], Awaitable[None]]
 
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 # LayoutView
