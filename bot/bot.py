@@ -512,14 +512,8 @@ class Cordex(Bot):
         self.db = await connect(str(db_path))
         self.db.row_factory = Row
 
-        def read_schemas() -> tuple[str, ...]:
-            return (
-                Path("schemas/config.sql").read_text(encoding = "utf-8"),
-                Path("schemas/cases.sql").read_text(encoding = "utf-8"),
-                Path("schemas/quarantines.sql").read_text(encoding = "utf-8"),
-                Path("schemas/lockdowns.sql").read_text(encoding = "utf-8"),
-                Path("schemas/command_restrictions.sql").read_text(encoding = "utf-8"),
-            )
+        def read_schemas() -> list[str]:
+            return [schema.read_text(encoding = "utf-8") for schema in Path("schemas").glob("*.sql")]
 
         for schema in await to_thread(read_schemas):
             await self.db.executescript(schema)
