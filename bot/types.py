@@ -21,8 +21,7 @@ else:
 # Bot Types
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
-type LambdaInter = Callable[["Interaction"], Awaitable[None]]  # ruff: ignore[quoted-type-alias]
-
+type LambdaInter = Callable[[Interaction], Awaitable[None]]
 
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 # NOT_PASSED Sentinel
