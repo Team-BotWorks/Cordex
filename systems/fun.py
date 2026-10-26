@@ -7,7 +7,7 @@ from discord.app_commands import Command
 from discord.ext.commands import Cog
 
 from bot import Cordex, Interaction
-from core.responses import MessageType, format_send
+from core.responses import FormatOverride, MessageType, PunctuationOverride, format_send
 
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 # Fun
@@ -51,6 +51,7 @@ class Fun(Cog):
                         title    = "run command",
                         subtitle = "Mmm mmm. 🙂‍↔️",
                         footer   = "Hehe. Okay okay, run the command again",
+                        override = FormatOverride(punctuation = PunctuationOverride(subtitle = False)),
                     )
                 elif count == 3:
                     await format_send(
