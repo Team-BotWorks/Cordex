@@ -185,7 +185,8 @@ class _ContextClass(BaseContext["Cordex"]):
         if isinstance(target, property):
             fget = target.fget
             if not fget:
-                return await self.send("Property has no getter method.")
+                error = "Property has no getter method."
+                raise TypeError(error)
             target = fget
 
         source = getsource(target)
