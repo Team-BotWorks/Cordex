@@ -16,6 +16,10 @@ from core.responses import FormatOverride, MessageType, format_send
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
 
+class DateReversalError(ValueError):
+    """The exception raised when a date is parsed in DD/MM format instead of MM/DD."""
+
+
 def _parse_date(date : str) -> datetime | None:
     for date_format in ("%m/%d/%Y", "%m/%d/%y", "%m/%d"):
         try:
@@ -26,6 +30,15 @@ def _parse_date(date : str) -> datetime | None:
             continue
         else:
             return parsed_dt
+
+    for date_format in ("%d/%m/%Y", "%d/%m/%y", "%d/%m"):
+        try:
+            datetime.strptime(date, date_format).replace(tzinfo = UTC)
+        except ValueError:
+            continue
+        else:
+            raise DateReversalError
+
     return None
 
 
@@ -77,7 +90,15 @@ async def run_moderation_cases_query(
         return
 
     if before:
-        before_datetime = _parse_date(before)
+        try:
+            before_datetime = _parse_date(before)
+        except DateReversalError:
+            await send_bad_argument(
+                interaction,
+                subtitle = {"before" : "Invalid date passed. A date must be of the form `MM/DD`, not `DD/MM`."},
+            )
+            return
+
         if not before_datetime:
             await send_bad_argument(
                 interaction,
@@ -88,7 +109,15 @@ async def run_moderation_cases_query(
         before_datetime = None
 
     if after:
-        after_datetime = _parse_date(after)
+        try:
+            after_datetime = _parse_date(after)
+        except DateReversalError:
+            await send_bad_argument(
+                interaction,
+                subtitle = {"after" : "Invalid date passed. A date must be of the form `MM/DD`, not `DD/MM`."},
+            )
+            return
+
         if not after_datetime:
             await send_bad_argument(
                 interaction,
@@ -107,15 +136,22 @@ async def run_moderation_cases_query(
         return
 
     cases_manager = CasesManager(interaction.client, guild)
-    cases         = await cases_manager.filter_by(
-        action_type  = parsed_action,
-        moderator_id = moderator.id if moderator else None,
-        target_id    = target.id    if target    else None,
-        channel_id   = channel.id   if channel   else None,
-        expired      = expired,
-        before       = before_datetime,
-        after        = after_datetime,
-    )
+    try:
+        cases = await cases_manager.filter_by(
+            action_type  = parsed_action,
+            moderator_id = moderator.id if moderator else None,
+            target_id    = target.id    if target    else None,
+            channel_id   = channel.id   if channel   else None,
+            expired      = expired,
+            before       = before_datetime,
+            after        = after_datetime,
+        )
+    except ValueError:
+        await send_bad_argument(
+            interaction,
+            subtitle = {("before", "after") : "The `after` filter date must occur strictly before the `before` filter date."},
+        )
+        return
 
     if expired is False:
         cases = [

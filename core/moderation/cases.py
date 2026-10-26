@@ -581,17 +581,26 @@ class CasesManager:
         -------
         `list[Case]`
             A list of all cases meeting the criteria.
+
+        Raises
+        ------
+        ValueError
+            You passed a datetime for `before` that wasn't later than that of the datetime of `after`.
         """
         if all(
             argument is None for argument in
             (action_type, moderator_id, target_id, channel_id, expired, before, after)
         ):
             warn(
-                "Prefer CasesManager.get_all_cases over CasesManager.filter_by if getting all cases.",
+                "Prefer CasesManager.get_all_cases over CasesManager.filter_by if implicitly getting all cases by passing no filters.",
                 category   = UserWarning,
                 stacklevel = 2,
             )
             return await self.get_all_cases()
+
+        if before is not None and after is not None and after >= before:
+            error = "Parameter 'before' must be a date later than that of parameter 'after'."
+            raise ValueError(error)
 
         conditions = [t"guild_id = {self.guild.id}"]
 
