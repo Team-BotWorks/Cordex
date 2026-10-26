@@ -17,7 +17,7 @@ from types import (
 from typing import NotRequired, Self, TypedDict, Unpack, cast, final, override
 
 from aiosqlite import Row
-from discord import Embed, File, Guild, Intents, Member, Message, Status, User
+from discord import Color, Embed, File, Guild, Intents, Member, Message, Status, User
 from discord import Interaction as BaseInteraction
 from discord.app_commands import AppCommand as APICommand
 from discord.app_commands import CommandTree, ContextMenu
@@ -26,7 +26,14 @@ from discord.ext.commands import Context as BaseContext
 from discord.ext.commands.view import StringView
 from discord.http import Route
 
-from constants import DENIED_EMOJI, DEVELOPER_IDS, DisplayNameEffect, DisplayNameFont
+from constants import (
+    COLOR_BLACK,
+    COLOR_WHITE,
+    DENIED_EMOJI,
+    DEVELOPER_IDS,
+    DisplayNameEffect,
+    DisplayNameFont,
+)
 from core.cog_loader import discover_cogs
 from core.state import (
     Config,
@@ -347,7 +354,7 @@ class Cordex(Bot):
         *,
         font   : DisplayNameFont   | NOT_PASSED = NOT_PASSED,
         effect : DisplayNameEffect | NOT_PASSED = NOT_PASSED,
-        colors : list[str]         | NOT_PASSED = NOT_PASSED,
+        colors : list[Color]       | NOT_PASSED = NOT_PASSED,
     ) -> None:
         """
         Set the bot's display name style for this guild.
@@ -362,7 +369,7 @@ class Cordex(Bot):
             The font to use in the display name style.
         effect : `DisplayNameEffect`
             The effect to use in the display name style.
-        colors : `list[str]`
+        colors : `list[Color]`
             The colors to use in the display name style. The gradient, prism, and gummy effects take up to five colors; all else take specifically one.
 
         Raises
@@ -401,7 +408,7 @@ class Cordex(Bot):
             error = f"{len(colors)} colors were passed; expected 1 to 5"
             raise ValueError(error)
 
-        color_integers = [int(hex_code, 16) for hex_code in colors]
+        color_integers = [color.value for color in colors]
 
         await self.http.request(
             route = Route("PATCH", "/guilds/{guild_id}/members/@me", guild_id = guild.id),
@@ -452,13 +459,13 @@ class Cordex(Bot):
             return DisplayNameStyle(
                 font   = DisplayNameFont(11),
                 effect = DisplayNameEffect(1),
-                colors = [f"{0xFFFFFF:06x}"],
+                colors = [COLOR_WHITE],
             )
 
         return DisplayNameStyle(
             font   = DisplayNameFont(styles["font_id"]),
             effect = DisplayNameEffect(styles["effect_id"]),
-            colors = [f"{color:06x}" for color in styles["colors"]],
+            colors = [Color(color) for color in styles["colors"]],
         )
 
     async def reset_name_style(self, guild : Guild, /, *, branded : bool = True) -> None:
@@ -478,7 +485,7 @@ class Cordex(Bot):
             guild,
             font   = DisplayNameFont.zilla_slab if branded else DisplayNameFont.default,
             effect = DisplayNameEffect.gradient if branded else DisplayNameEffect.solid,
-            colors = ["FFFFFF", "000000"]       if branded else ["FFFFFF"],
+            colors = [COLOR_WHITE, COLOR_BLACK] if branded else [COLOR_WHITE],
         )
 
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻

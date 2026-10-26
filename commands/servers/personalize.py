@@ -2,7 +2,7 @@
 
 from typing import Literal, Self, final, override
 
-from discord import HTTPException, SelectOption, TextStyle
+from discord import Color, HTTPException, SelectOption, TextStyle
 
 from bot import Interaction
 from bot.types import DisplayNameStyle
@@ -88,7 +88,7 @@ class _ColorsModal(Modal, title = "Edit Color(s)"):
         super().__init__()
         self.view = view
 
-        colors = "-".join(view.style.colors)
+        colors = "-".join(f"{color.value:06X}" for color in view.style.colors)
 
         self._colors = TextInput[Self](
             placeholder = "ABCDEF or ABCDEF-123456-...",
@@ -128,7 +128,10 @@ class _ColorsModal(Modal, title = "Edit Color(s)"):
             )
             return
 
-        await self.view.apply(interaction, colors = color_set)
+        await self.view.apply(
+            interaction,
+            colors = [Color(int(color, 16)) for color in color_set],
+        )
 
 
 @final
@@ -351,7 +354,7 @@ class _PersonalizationView(NamedPaginator):
         *,
         font        : DisplayNameFont   | None = None,
         effect      : DisplayNameEffect | None = None,
-        colors      : list[str]         | None = None,
+        colors      : list[Color]       | None = None,
     ) -> None:
         guild = interaction.guild
         if not guild:
@@ -399,7 +402,7 @@ class _PersonalizationView(NamedPaginator):
         await interaction.response.edit_message(view = self)
 
     def update_pages(self) -> None:
-        colors = "-".join(f"`{color}`" for color in self.style.colors) or "None"
+        colors = "-".join(f"`{color.value:06X}`" for color in self.style.colors) or "None"
 
         for option in self.font_select.options:
             option.default = option.value == self.style.font.name
