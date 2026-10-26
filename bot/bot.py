@@ -2,10 +2,12 @@
 
 from asyncio import to_thread
 from collections.abc import Awaitable, Callable
+from importlib import import_module
 from inspect import getattr_static, getsource
 from io import BytesIO
 from logging import getLogger as get_logger
 from pathlib import Path
+from pkgutil import walk_packages
 from types import (
     CodeType,
     FrameType,
@@ -34,7 +36,6 @@ from constants import (
     DisplayNameEffect,
     DisplayNameFont,
 )
-from core.cog_loader import discover_cogs
 from core.state import (
     Config,
     Connection,
@@ -62,6 +63,8 @@ type _Callback = Callable[[Interaction], Awaitable[None]]
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 # Bot & Client Management
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
+
+PACKAGE_NAMES = ["commands", "core", "systems"]
 
 log = get_logger("Cordex")
 
@@ -530,12 +533,31 @@ class Cordex(Bot):
 
         # ⸻ Cogs
 
-        cogs = await to_thread(
-            discover_cogs,
-            "commands",
-            "systems",
-            "core",
-        )
+        seen : set[str] = set()
+
+        for package_name in PACKAGE_NAMES:
+            try:
+                package = import_module(package_name)
+            except Exception:
+                log.exception("Failed to import package %s", package_name)
+                continue
+
+            modules_to_check = [package_name] + [info.name for info in walk_packages(package.__path__, f"{package.__name__}.")]
+
+            for name in modules_to_check:
+                if name in seen or name.endswith("._base"):
+                    continue
+
+                try:
+                    module = import_module(name)
+                except Exception:
+                    log.exception("Failed to import module %s", name)
+                    continue
+
+                if callable(getattr(module, "setup", None)):
+                    seen.add(name)
+
+        cogs = sorted(seen)
 
         for cog in cogs:
             try:
