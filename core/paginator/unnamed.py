@@ -129,7 +129,6 @@ class _PageRow(ActionRow["UnnamedPaginator"]):
         if total >= 3:
             self.btn_first.disabled = is_first
             self.btn_last.disabled  = is_last
-            self.btn_page.label     = f"{current + 1} / {total}"
 
         self.btn_backward.disabled = is_first
         self.btn_forward.disabled  = is_last
@@ -146,7 +145,7 @@ class _PageRow(ActionRow["UnnamedPaginator"]):
     async def btn_backward(self, interaction : Interaction, _button : Button[UnnamedPaginator]) -> None:
         await self.paginator._turn(interaction, self.paginator.current_page - 1)
 
-    @button(label = "1 / 1", style = ButtonStyle.green)
+    @button(label = "...", style = ButtonStyle.green)
     async def btn_page(self, interaction : Interaction, _button : Button[UnnamedPaginator]) -> None:
         await interaction.response.send_modal(_PageJumpModal(self.paginator))
 
