@@ -49,9 +49,8 @@ class LockdownEnforcer(Cog):
                 log.info("Lockdown reset complete. %s guilds reset.", len(stale_guild_ids))
 
         for guild in self.bot.guilds:
-            manager = LockdownManager(self.bot, guild)
             try:
-                await manager.enforce()
+                await LockdownManager(self.bot, guild).enforce()
             except HTTPException as e:
                 if e.status == 429:
                     break
@@ -80,25 +79,23 @@ class LockdownEnforcer(Cog):
 
     @Cog.listener("on_guild_channel_delete")
     async def _listener_lockdownenforce_channeldelete(self, channel : GuildChannel) -> None:
+        guild = channel.guild
+
         if not isinstance(channel, GuildMessagableChannel):
             return
 
-        guild   = channel.guild
-        manager = LockdownManager(self.bot, guild)
-        if channel.id not in await manager.get_channels(by_id = True):
-            return
+        if channel.id in await LockdownManager(self.bot, guild).get_channels(by_id = True):
+            await self.bot.db.execute(
+                t"DELETE FROM Lockdowns WHERE channel_id = {channel.id} AND guild_id = {guild.id}",
+            )
+            await self.bot.db.commit()
 
-        await self.bot.db.execute(
-            t"DELETE FROM Lockdowns WHERE channel_id = {channel.id} AND guild_id = {guild.id}",
-        )
-        await self.bot.db.commit()
-
-        payload = LockdownRemovePayload(
-            moderator = guild.me,
-            channel   = channel,
-            reason    = "The channel was deleted.",
-        )
-        await CasesManager(self.bot, guild).create_case(payload)
+            payload = LockdownRemovePayload(
+                moderator = guild.me,
+                channel   = channel,
+                reason    = "The channel was deleted.",
+            )
+            await CasesManager(self.bot, guild).create_case(payload)
 
 
 async def setup(bot : Cordex) -> None:  # ruff: ignore[undocumented-public-function]

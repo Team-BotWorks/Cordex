@@ -95,8 +95,7 @@ class QuarantineEnforcer(Cog):
         if all(checks):
             return
 
-        manager = QuarantineManager(self.bot, after.guild)
-        await manager.enforce("Channels")
+        await QuarantineManager(self.bot, after.guild).enforce("Channels")
 
     @Cog.listener("on_guild_channel_create")
     async def _listener_quarantineenforce_channelcreate(self, channel : GuildChannel) -> None:
@@ -104,16 +103,14 @@ class QuarantineEnforcer(Cog):
         if not quarantine_role:
             return
 
-        manager = QuarantineManager(self.bot, channel.guild)
-        await manager.enforce("Channels")
+        await QuarantineManager(self.bot, channel.guild).enforce("Channels")
 
     @Cog.listener("on_guild_role_update")
     async def _listener_quarantineenforce_roleupdate(self, before : Role, after : Role) -> None:
         if before.position == after.position:
             return
 
-        manager = QuarantineManager(self.bot, after.guild)
-        await manager.enforce("Role")
+        await QuarantineManager(self.bot, after.guild).enforce("Role")
 
     @Cog.listener("on_guild_role_delete")
     async def _listener_quarantineenforce_roledelete(self, role : Role) -> None:
@@ -121,8 +118,7 @@ class QuarantineEnforcer(Cog):
         if role.id != quarantine_role_id:
             return
 
-        manager = QuarantineManager(self.bot, role.guild)
-        await manager.enforce()
+        await QuarantineManager(self.bot, role.guild).enforce()
 
     @Cog.listener("on_member_update")
     async def _listener_quarantineenforce_memberupdate(self, before : Member, after : Member) -> None:
@@ -136,8 +132,7 @@ class QuarantineEnforcer(Cog):
         if after.roles == [quarantine_role]:
             return
 
-        manager = QuarantineManager(self.bot, after.guild)
-        await manager.enforce("Members")
+        await QuarantineManager(self.bot, after.guild).enforce("Members")
 
     @Cog.listener("on_member_join")
     async def _listener_quarantineenforce_memberjoin(self, member : Member) -> None:
