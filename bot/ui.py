@@ -189,18 +189,18 @@ class Confirmation(AutoTimeoutLayoutView):
         super().__init__(timeout = timeout)
         self.message : Message | None = None
 
-        self.acceptance_label : str = acceptance_label
-        self.denial_label     : str = denial_label
-        self.on_acceptance : _OnChoice = on_acceptance
-        self.on_denial     : _OnChoice = on_denial
+        self.acceptance_button : Button[Confirmation]    = _AcceptButton(acceptance_label, on_acceptance)
+        self.denial_button     : Button[Confirmation]    = _DenyButton(denial_label, on_denial)
+        self.choice_row        : ActionRow[Confirmation] = ActionRow(self.acceptance_button, self.denial_button)
+
+        self._acceptance_label : str = acceptance_label
+        self._denial_label     : str = denial_label
+
+        self._on_acceptance : _OnChoice = on_acceptance
+        self._on_denial     : _OnChoice = on_denial
 
         self.append_items(children)
-        self.add_item(
-            ActionRow(
-                _AcceptButton(acceptance_label, on_acceptance),
-                _DenyButton(denial_label, on_denial),
-            ),
-        )
+        self.add_item(self.choice_row)
 
     async def on_choice(self) -> None:
         await self._expire()
