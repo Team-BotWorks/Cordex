@@ -6,7 +6,7 @@ from discord import File as DiscordFile
 from discord.ext.commands import Cog
 
 from bot import Cordex
-from bot.types import GuildMessagable
+from bot.types import GuildMessageable
 from bot.ui import Container, File, LayoutView, TextDisplay, VisibleLargeSeparator
 from constants import COLOR_RED
 from core.utilities import format_now, format_table, is_bot_owner
@@ -41,7 +41,7 @@ class MessageDeleteLogging(Cog):
 
         # ⸻ Block non-guild messages.
 
-        if not guild or not isinstance(channel, GuildMessagable):
+        if not guild or not isinstance(channel, GuildMessageable):
             return
 
         # ⸻ Block messages that do not belong to the current guild context.

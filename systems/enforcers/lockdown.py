@@ -7,7 +7,7 @@ from discord.ext.commands import Cog
 from discord.ext.tasks import loop
 
 from bot import Cordex, log
-from bot.types import GuildMessagableChannel
+from bot.types import GuildMessageableChannel
 from core.moderation import LockdownManager
 from core.moderation.cases import CasesManager
 from core.moderation.payloads import LockdownRemovePayload
@@ -81,7 +81,7 @@ class LockdownEnforcer(Cog):
     async def _listener_lockdownenforce_channeldelete(self, channel : GuildChannel) -> None:
         guild = channel.guild
 
-        if not isinstance(channel, GuildMessagableChannel):
+        if not isinstance(channel, GuildMessageableChannel):
             return
 
         if channel.id in await LockdownManager(self.bot, guild).get_channels(by_id = True):
@@ -90,12 +90,13 @@ class LockdownEnforcer(Cog):
             )
             await self.bot.db.commit()
 
-            payload = LockdownRemovePayload(
-                moderator = guild.me,
-                channel   = channel,
-                reason    = "The channel was deleted.",
+            await CasesManager(self.bot, guild).create_case(
+                LockdownRemovePayload(
+                    moderator = guild.me,
+                    channel   = channel,
+                    reason    = "The channel was deleted.",
+                ),
             )
-            await CasesManager(self.bot, guild).create_case(payload)
 
 
 async def setup(bot : Cordex) -> None:  # ruff: ignore[undocumented-public-function]

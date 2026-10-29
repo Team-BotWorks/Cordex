@@ -7,7 +7,7 @@ from discord.ext.commands import Cog
 from discord.utils import format_dt, utcnow
 
 from bot import Cordex
-from bot.types import GuildMessagable
+from bot.types import GuildMessageable
 from bot.ui import (
     Button,
     ButtonSection,
@@ -53,7 +53,7 @@ class MessageEditLogging(Cog):
 
         # ⸻ Block non-guild messages.
 
-        if not guild or not isinstance(channel, GuildMessagable):
+        if not guild or not isinstance(channel, GuildMessageable):
             return
 
         # ⸻ Block messages that do not belong to the current guild context.

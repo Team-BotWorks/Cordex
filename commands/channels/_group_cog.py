@@ -12,7 +12,7 @@ from discord.app_commands import (
 from discord.ext.commands import GroupCog
 
 from bot import Cordex, Interaction
-from bot.types import GuildMessagable, GuildMessagableChannel
+from bot.types import GuildMessageable, GuildMessageableChannel
 from core.state import requires_restriction
 from core.utilities import unimplemented
 
@@ -57,8 +57,8 @@ class ChannelCommands(
     async def cmd_channel_compare(
         self,
         interaction : Interaction,
-        channel_1   : GuildMessagableChannel | None = None,
-        channel_2   : GuildMessagableChannel | None = None,
+        channel_1   : GuildMessageableChannel | None = None,
+        channel_2   : GuildMessageableChannel | None = None,
     ) -> None:
         await run_channel_compare(interaction, channel_1, channel_2)
 
@@ -74,7 +74,7 @@ class ChannelCommands(
     async def cmd_channel_info(
         self,
         interaction : Interaction,
-        channel     : GuildMessagable | None = None,
+        channel     : GuildMessageable | None = None,
     ) -> None:
         await run_channel_info(interaction, channel)
 
@@ -102,8 +102,8 @@ class ChannelCommands(
     async def cmd_channel_permissions(
         self,
         interaction        : Interaction,
-        channel            : GuildMessagableChannel | None = None,
-        permissions_filter : str                    | None = None,
+        channel            : GuildMessageableChannel | None = None,
+        permissions_filter : str                     | None = None,
     ) -> None:
         await run_channel_permissions(interaction, channel, permissions_filter)
 

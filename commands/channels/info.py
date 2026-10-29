@@ -14,7 +14,7 @@ from discord.abc import GuildChannel
 from discord.utils import format_dt
 
 from bot import Interaction
-from bot.types import GuildMessagable
+from bot.types import GuildMessageable
 from bot.ui import Container, LayoutView, TextDisplay
 from constants import (
     ACTIVE_LOCKED_STAGE_EMOJI,
@@ -107,7 +107,7 @@ def _member_section(title : str, members : Sequence[Member]) -> str | None:
     )
 
 
-async def run_channel_info(interaction : Interaction, channel : GuildMessagable | None = None) -> None:
+async def run_channel_info(interaction : Interaction, channel : GuildMessageable | None = None) -> None:
     """
     View information for a channel.
 
@@ -115,7 +115,7 @@ async def run_channel_info(interaction : Interaction, channel : GuildMessagable 
     ----------
     interaction : `Interaction`
         The interaction context to run the command with.
-    channel : `GuildMessagable | None = None`
+    channel : `GuildMessageable | None = None`
         The channel to view information for. Defaults to the current one.
     """
     await interaction.response.defer()
@@ -123,7 +123,7 @@ async def run_channel_info(interaction : Interaction, channel : GuildMessagable 
     target = channel or interaction.channel
     thread_target : Thread | None = None
 
-    if not interaction.guild or not isinstance(target, GuildMessagable):
+    if not interaction.guild or not isinstance(target, GuildMessageable):
         return
 
     if isinstance(target, Thread):

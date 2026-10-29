@@ -1,7 +1,7 @@
 from discord import Attachment, Thread
 from discord.utils import escape_markdown
 
-from bot.types import GuildMessagable
+from bot.types import GuildMessageable
 from constants import RIGHTWARDS_ARROW_EMOJI
 from core.utilities import truncate
 
@@ -22,7 +22,7 @@ def clean_and_truncate(text : str) -> str:
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
 
-def channel_display(channel : GuildMessagable) -> str:
+def channel_display(channel : GuildMessageable) -> str:
     if isinstance(channel, Thread):
         parent = channel.parent
 

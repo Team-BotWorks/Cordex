@@ -15,7 +15,7 @@ from discord import (
 )
 
 from bot import Cordex, log
-from bot.types import GuildMessagable
+from bot.types import GuildMessageable
 from bot.ui import (
     Container,
     LayoutView,
@@ -103,7 +103,7 @@ class Case:
         Only populated in user-type cases.
     reason : `str`
         The reason for the action in the case.
-    channel : `GuildMessagable | None`
+    channel : `GuildMessageable | None`
         The channel affected in the case.
         Only populated in channel-type cases.
     created_at : `datetime`
@@ -134,17 +134,17 @@ class Case:
     id                : int
     action_type       : ActionType
     moderator         : Member
-    target            : Member | User   | None
+    target            : Member | User    | None
     reason            : str
-    channel           : GuildMessagable | None
+    channel           : GuildMessageable | None
     created_at        : datetime
-    dm_user           : bool            | None
-    seconds_to_delete : int             | None
-    timeout_length    : int             | None
-    purge_amount      : int             | None
-    purge_force       : bool            | None
+    dm_user           : bool             | None
+    seconds_to_delete : int              | None
+    timeout_length    : int              | None
+    purge_amount      : int              | None
+    purge_force       : bool             | None
     expired           : bool
-    related_case_id   : int             | None
+    related_case_id   : int              | None
 
 
 @final
@@ -197,7 +197,7 @@ class CasesManager:
             moderator         = moderator,
             target            = target,
             reason            = cast("str", row["reason"]),
-            channel           = channel if isinstance(channel, GuildMessagable) else None,
+            channel           = channel if isinstance(channel, GuildMessageable) else None,
             created_at        = created_at,
             dm_user           = bool(cast("int | None", row["dm_user"])),
             seconds_to_delete = cast("int | None", row["seconds_to_delete"]),

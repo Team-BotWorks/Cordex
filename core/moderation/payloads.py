@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 from discord import Member, User
 
-from bot.types import GuildMessagable, GuildMessagableChannel
+from bot.types import GuildMessageable, GuildMessageableChannel
 from core.exceptions import DependentParameterError
 
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
@@ -29,7 +29,7 @@ class _BaseAddPayload:
 @dataclass
 class _BaseLockdownPayload:
     moderator : Member
-    channel   : GuildMessagableChannel
+    channel   : GuildMessageableChannel
     reason    : str
 
 
@@ -42,7 +42,7 @@ class LockdownAddPayload(_BaseLockdownPayload):
     ----------
     moderator : `Member`
         The moderator responsible for the lockdown add.
-    channel : `GuildMessagableChannel`
+    channel : `GuildMessageableChannel`
         The target channel of the lockdown add.
     reason : `str`
         The reason for the lockdown add.
@@ -58,7 +58,7 @@ class LockdownRemovePayload(_BaseLockdownPayload):
     ----------
     moderator : `Member`
         The moderator responsible for the lockdown remove.
-    channel : `GuildMessagableChannel`
+    channel : `GuildMessageableChannel`
         The target channel of the lockdown remove.
     reason : `str`
         The reason for the lockdown remove.
@@ -217,7 +217,7 @@ class PurgePayload:
         The optional target member whose messages will be purged.
     reason : `str`
         The reason for the purge.
-    channel : `GuildMessagable`
+    channel : `GuildMessageable`
         The target channel of the purge.
     amount : `int`
         The amount of messages to purge.
@@ -232,7 +232,7 @@ class PurgePayload:
     moderator : Member
     target    : Member | None
     reason    : str
-    channel   : GuildMessagable
+    channel   : GuildMessageable
     amount    : int
     force     : bool
 

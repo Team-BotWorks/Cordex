@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Literal, cast, final, overload
 
 from discord import Guild, Member, NotFound, Role
 
-from bot.types import GuildMessagable
+from bot.types import GuildMessageable
 
 from .restrictions import Restriction
 
@@ -185,9 +185,9 @@ class Config:
     async def get_moderation_logging_channel(self, *, by_id : Literal[True]) -> int | None: ...
 
     @overload
-    async def get_moderation_logging_channel(self, *, by_id : Literal[False] = False) -> GuildMessagable | None: ...
+    async def get_moderation_logging_channel(self, *, by_id : Literal[False] = False) -> GuildMessageable | None: ...
 
-    async def get_moderation_logging_channel(self, *, by_id : bool = False) -> GuildMessagable | int | None:
+    async def get_moderation_logging_channel(self, *, by_id : bool = False) -> GuildMessageable | int | None:
         """
         Get the channel where the bot should log moderation actions, if any.
 
@@ -221,7 +221,7 @@ class Config:
         try:
             if not isinstance(
                 log_channel := self.guild.get_channel(channel_id) or await self.guild.fetch_channel(channel_id),
-                GuildMessagable,
+                GuildMessageable,
             ):
                 return None
         except NotFound:
@@ -233,13 +233,13 @@ class Config:
     # set_moderation_logging_channel
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
-    async def set_moderation_logging_channel(self, channel : GuildMessagable | None, /) -> None:
+    async def set_moderation_logging_channel(self, channel : GuildMessageable | None, /) -> None:
         """
         Set or reset the channel where the bot should log moderation actions.
 
         Parameters
         ----------
-        channel : `GuildMessagable | None`
+        channel : `GuildMessageable | None`
             The channel where the bot should log moderation actions, or `None` to reset.
         /
         """
@@ -262,9 +262,9 @@ class Config:
     async def get_messages_delete_logging_channel(self, *, by_id : Literal[True]) -> int | None: ...
 
     @overload
-    async def get_messages_delete_logging_channel(self, *, by_id : Literal[False] = False) -> GuildMessagable | None: ...
+    async def get_messages_delete_logging_channel(self, *, by_id : Literal[False] = False) -> GuildMessageable | None: ...
 
-    async def get_messages_delete_logging_channel(self, *, by_id : bool = False) -> GuildMessagable | int | None:
+    async def get_messages_delete_logging_channel(self, *, by_id : bool = False) -> GuildMessageable | int | None:
         """
         Get the channel where the bot should log message deletions, if any.
 
@@ -298,7 +298,7 @@ class Config:
         try:
             if not isinstance(
                 log_channel := self.guild.get_channel(channel_id) or await self.guild.fetch_channel(channel_id),
-                GuildMessagable,
+                GuildMessageable,
             ):
                 return None
         except NotFound:
@@ -310,13 +310,13 @@ class Config:
     # set_messages_delete_logging_channel
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
-    async def set_messages_delete_logging_channel(self, channel : GuildMessagable | None, /) -> None:
+    async def set_messages_delete_logging_channel(self, channel : GuildMessageable | None, /) -> None:
         """
         Set or reset the channel where the bot should log message deletions.
 
         Parameters
         ----------
-        channel : `GuildMessagable | None`
+        channel : `GuildMessageable | None`
             The channel where the bot should log message deletions, or `None` to reset.
         /
         """
@@ -339,9 +339,9 @@ class Config:
     async def get_messages_edit_logging_channel(self, *, by_id : Literal[True]) -> int | None: ...
 
     @overload
-    async def get_messages_edit_logging_channel(self, *, by_id : Literal[False] = False) -> GuildMessagable | None: ...
+    async def get_messages_edit_logging_channel(self, *, by_id : Literal[False] = False) -> GuildMessageable | None: ...
 
-    async def get_messages_edit_logging_channel(self, *, by_id : bool = False) -> GuildMessagable | int | None:
+    async def get_messages_edit_logging_channel(self, *, by_id : bool = False) -> GuildMessageable | int | None:
         """
         Get the channel where the bot should log message edits, if any.
 
@@ -375,7 +375,7 @@ class Config:
         try:
             if not isinstance(
                 log_channel := self.guild.get_channel(channel_id) or await self.guild.fetch_channel(channel_id),
-                GuildMessagable,
+                GuildMessageable,
             ):
                 return None
         except NotFound:
@@ -387,13 +387,13 @@ class Config:
     # set_messages_edit_logging_channel
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
-    async def set_messages_edit_logging_channel(self, channel : GuildMessagable | None, /) -> None:
+    async def set_messages_edit_logging_channel(self, channel : GuildMessageable | None, /) -> None:
         """
         Set or reset the channel where the bot should log message edits.
 
         Parameters
         ----------
-        channel : `GuildMessagable | None`
+        channel : `GuildMessageable | None`
             The channel where the bot should log message edits, or `None` to reset.
         /
         """

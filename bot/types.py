@@ -34,8 +34,8 @@ AnnotatedCommand = Command[Group | Cog, ..., object] | Group
 # Guild Messagables
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
-GuildMessagable        = TextChannel | StageChannel | VoiceChannel | Thread
-GuildMessagableChannel = TextChannel | StageChannel | VoiceChannel
+GuildMessageable        = TextChannel | StageChannel | VoiceChannel | Thread
+GuildMessageableChannel = TextChannel | StageChannel | VoiceChannel
 
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 # DisplayNameStyle

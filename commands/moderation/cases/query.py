@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 from discord import AllowedMentions, Member, User
 
 from bot import Interaction
-from bot.types import GuildMessagable
+from bot.types import GuildMessageable
 from commands.moderation._base import build_case_section
 from constants import COLOR_GREY
 from core.exceptions import send_bad_argument
@@ -45,13 +45,13 @@ def _parse_date(date : str) -> datetime | None:
 async def run_moderation_cases_query(
     interaction : Interaction,
     *,
-    action_type : str             | None = None,
-    moderator   : Member          | None = None,
-    target      : User            | None = None,
-    channel     : GuildMessagable | None = None,
-    expired     : bool            | None = None,
-    before      : str             | None = None,
-    after       : str             | None = None,
+    action_type : str              | None = None,
+    moderator   : Member           | None = None,
+    target      : User             | None = None,
+    channel     : GuildMessageable | None = None,
+    expired     : bool             | None = None,
+    before      : str              | None = None,
+    after       : str              | None = None,
 ) -> None:
     """
     Query moderation cases with various filters.
@@ -66,7 +66,7 @@ async def run_moderation_cases_query(
         Filter by moderator.
     target : `User | None = None`
         Filter by user.
-    channel : `GuildMessagable | None = None`
+    channel : `GuildMessageable | None = None`
         Filter by channel.
     expired : `bool | None = None`
         Filter by expiration.

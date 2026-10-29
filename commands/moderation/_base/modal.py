@@ -6,7 +6,7 @@ from typing import Self, final, override
 from discord import ButtonStyle, Member, User
 
 from bot import Interaction
-from bot.types import GuildMessagable, GuildMessagableChannel
+from bot.types import GuildMessageable, GuildMessageableChannel
 from bot.ui import (
     ActionRow,
     Button,
@@ -48,7 +48,7 @@ from core.utilities import format_table
 
 from .utilities import hierarchy
 
-type Targetable = User | Member | GuildMessagable
+type Targetable = User | Member | GuildMessageable
 
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 # Moderation Select Base
@@ -93,8 +93,8 @@ class _ModerationModal(Modal):
 
         # ⸻ Validate that target is the correct type.
 
-        if isinstance(target, GuildMessagable) and action_type not in channel_types:
-            error = "target cannot be GuildMessagable if action_type is not channel type"
+        if isinstance(target, GuildMessageable) and action_type not in channel_types:
+            error = "target cannot be GuildMessageable if action_type is not a channel type"
             raise ValueError(error)
 
         if isinstance(target, Member) and action_type not in person_types:
@@ -275,9 +275,9 @@ class _ModerationModal(Modal):
                 if not interaction.guild or not isinstance(interaction.user, Member):
                     return
 
-                # ⸻ We already validated that target is a GuildMessagable in __init__.
+                # ⸻ We already validated that target is a GuildMessageable in __init__.
 
-                if not isinstance(self.target, GuildMessagable):
+                if not isinstance(self.target, GuildMessageable):
                     return
 
                 # ⸻ Force requires Target.
@@ -424,7 +424,7 @@ class _ModerationModal(Modal):
 
                 match modal.action_type:
                     case ActionType.lockdown_add:
-                        if not isinstance(modal.target, GuildMessagableChannel):
+                        if not isinstance(modal.target, GuildMessageableChannel):
                             return
 
                         result = await actions.lockdown_add(
@@ -435,7 +435,7 @@ class _ModerationModal(Modal):
                             ),
                         )
                     case ActionType.lockdown_remove:
-                        if not isinstance(modal.target, GuildMessagableChannel):
+                        if not isinstance(modal.target, GuildMessageableChannel):
                             return
 
                         result = await actions.lockdown_remove(
@@ -542,7 +542,7 @@ class _ModerationModal(Modal):
                             ),
                         )
                     case ActionType.purge:
-                        if not isinstance(modal.target, GuildMessagable):
+                        if not isinstance(modal.target, GuildMessageable):
                             return
 
                         result = await actions.purge(
@@ -728,7 +728,7 @@ async def send_moderation_modal(
             )
             return
 
-    if action_type in {ActionType.lockdown_add, ActionType.lockdown_remove} and isinstance(target, GuildMessagable):
+    if action_type in {ActionType.lockdown_add, ActionType.lockdown_remove} and isinstance(target, GuildMessageable):
         lockdowned_channels = await LockdownManager(client, guild).get_channels()
 
         if action_type == ActionType.lockdown_add and target in lockdowned_channels:

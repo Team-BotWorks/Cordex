@@ -1,5 +1,5 @@
 from bot import Interaction
-from bot.types import GuildMessagableChannel
+from bot.types import GuildMessageableChannel
 from core.exceptions import send_bad_argument
 
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
@@ -9,8 +9,8 @@ from core.exceptions import send_bad_argument
 
 async def run_channel_compare(
     interaction : Interaction,
-    channel_1   : GuildMessagableChannel | None = None,
-    channel_2   : GuildMessagableChannel | None = None,
+    channel_1   : GuildMessageableChannel | None = None,
+    channel_2   : GuildMessageableChannel | None = None,
 ) -> None:
     """
     List all differing permissions for two selected channels.
@@ -19,9 +19,9 @@ async def run_channel_compare(
     ----------
     interaction : `Interaction`
         The interaction context to run the command with.
-    channel_1 : `GuildMessagableChannel | None = None`
+    channel_1 : `GuildMessageableChannel | None = None`
         The first channel to compare. Defaults to the current one.
-    channel_2 : `GuildMessagableChannel | None = None`
+    channel_2 : `GuildMessageableChannel | None = None`
         The second channel to compare. Defaults to the current one.
     """
     await interaction.response.defer()

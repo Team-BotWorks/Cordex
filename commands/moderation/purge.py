@@ -1,7 +1,7 @@
 from discord import Member
 
 from bot import Interaction
-from bot.types import GuildMessagable
+from bot.types import GuildMessageable
 from core.moderation import ActionType
 
 from ._base import send_moderation_modal
@@ -23,7 +23,7 @@ async def run_moderation_purge(interaction : Interaction, target : Member | None
         The member to purge messages from.
     """
     channel = interaction.channel
-    if not isinstance(channel, GuildMessagable):
+    if not isinstance(channel, GuildMessageable):
         return
 
     await send_moderation_modal(interaction, ActionType.purge, channel, target)
