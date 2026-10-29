@@ -309,7 +309,7 @@ class Cordex(Bot):
     # Configuration
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
-    def config(self, guild : Guild) -> Config:
+    def config(self, guild : Guild, /) -> Config:
         """
         Get the configuration for a guild.
 
@@ -317,6 +317,7 @@ class Cordex(Bot):
         ----------
         guild : `Guild`
             The guild to get the configuration for.
+        /
 
         Returns
         -------
@@ -324,6 +325,19 @@ class Cordex(Bot):
             The configuration for this guild.
         """
         return Config(self, guild)
+
+    async def delete_configs(self, *guild_ids : int) -> None:
+        """
+        Delete configurations for guilds.
+
+        Parameters
+        ----------
+        *guild_ids : `int`
+            The IDs of the guilds to delete the configuration for.
+        /
+        """
+        await self.db.execute(t"DELETE FROM Config WHERE guild_id IN {guild_ids}")
+        await self.db.commit()
 
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
     # Biography
@@ -335,7 +349,7 @@ class Cordex(Bot):
 
         Returns
         -------
-        str
+        `str`
             The biography for this guild.
         """
         return cast(

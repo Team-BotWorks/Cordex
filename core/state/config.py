@@ -34,15 +34,6 @@ class Config:
         self.guild = guild
 
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
-    # reset
-    # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
-
-    async def reset(self) -> None:
-        """Completely erases the configuration for a guild."""
-        await self.bot.db.execute(t"DELETE FROM Config WHERE guild_id = {self.guild.id}")
-        await self.bot.db.commit()
-
-    # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
     # get_command_allowed
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
@@ -96,12 +87,12 @@ class Config:
 
             for role_id in role_ids:
                 await self.bot.db.execute(
-                    t"INSERT INTO CommandRestrictions (guild_id, command_name, target_type, target_id) VALUES ({self.guild.id}, {command_name}, {"role"}, {role_id})",
+                    t"INSERT INTO CommandRestrictions (guild_id, command_name, target_type, target_id) VALUES ({self.guild.id}, {command_name}, role, {role_id})",
                 )
 
             for user_id in user_ids:
                 await self.bot.db.execute(
-                    t"INSERT INTO CommandRestrictions (guild_id, command_name, target_type, target_id) VALUES ({self.guild.id}, {command_name}, {"user"}, {user_id})",
+                    t"INSERT INTO CommandRestrictions (guild_id, command_name, target_type, target_id) VALUES ({self.guild.id}, {command_name}, user, {user_id})",
                 )
 
             await self.bot.db.commit()
@@ -131,17 +122,19 @@ class Config:
 
         Parameters
         ----------
+        *
         by_id : `bool = False`
             Whether to return the ID of the role over an actual role object or not. This is useful in cases where the role may have been deleted.
 
         Returns
         -------
-        `Role | int | None`
-            The role or its ID that the bot should assign to quarantined members. Returns `None` if not configured or deleted.
-        /
+        `by_id = False -> Role | None`
+            The role that the bot should assign to quarantined members. Returns `None` if not configured or deleted.
+        `by_id = True -> int | None`
+            The ID of the role that the bot should assign to quarantined members. Returns `None` if not configured or deleted.
         """
         async with self.bot.db.execute(
-            t"SELECT config_value FROM Config WHERE guild_id = {self.guild.id} AND config_key = {"moderation_quarantine_role"}",
+            t"SELECT config_value FROM Config WHERE guild_id = {self.guild.id} AND config_key = moderation_quarantine_role",
         ) as cursor:
             res = await cursor.fetchone()
             if not res:
@@ -175,11 +168,11 @@ class Config:
         """
         if not role:
             await self.bot.db.execute(
-                t"DELETE FROM Config WHERE guild_id = {self.guild.id} AND config_key = {"moderation_quarantine_role"}",
+                t"DELETE FROM Config WHERE guild_id = {self.guild.id} AND config_key = moderation_quarantine_role",
             )
         else:
             await self.bot.db.execute(
-                t"INSERT INTO Config (guild_id, config_key, config_value) VALUES ({self.guild.id}, {"moderation_quarantine_role"}, {role.id}) "
+                t"INSERT INTO Config (guild_id, config_key, config_value) VALUES ({self.guild.id}, moderation_quarantine_role, {role.id}) "
                 t"ON CONFLICT (guild_id, config_key) DO UPDATE SET config_value = excluded.config_value",
             )
         await self.bot.db.commit()
@@ -200,17 +193,19 @@ class Config:
 
         Parameters
         ----------
+        *
         by_id : `bool = False`
             Whether to return the ID of the channel over an actual channel object or not. This is useful in cases where the channel may have been deleted.
 
         Returns
         -------
-        `GuildMessageable | int | None`
-            The channel or its ID in which the bot should log moderation actions. Returns `None` if not configured or deleted.
-        /
+        `by_id = False -> GuildMessageable | None`
+            The channel in which the bot should log moderation actions. Returns `None` if not configured or deleted.
+        `by_id = True -> int | None`
+            The ID of the channel in which the bot should log moderation actions. Returns `None` if not configured or deleted.
         """
         async with self.bot.db.execute(
-            t"SELECT config_value FROM Config WHERE guild_id = {self.guild.id} AND config_key = {"moderation_logging_channel"}",
+            t"SELECT config_value FROM Config WHERE guild_id = {self.guild.id} AND config_key = moderation_logging_channel",
         ) as cursor:
             res = await cursor.fetchone()
             if not res:
@@ -250,11 +245,11 @@ class Config:
         """
         if not channel:
             await self.bot.db.execute(
-                t"DELETE FROM Config WHERE guild_id = {self.guild.id} AND config_key = {"moderation_logging_channel"}",
+                t"DELETE FROM Config WHERE guild_id = {self.guild.id} AND config_key = moderation_logging_channel",
             )
         else:
             await self.bot.db.execute(
-                t"INSERT INTO Config (guild_id, config_key, config_value) VALUES ({self.guild.id}, {"moderation_logging_channel"}, {channel.id}) "
+                t"INSERT INTO Config (guild_id, config_key, config_value) VALUES ({self.guild.id}, moderation_logging_channel, {channel.id}) "
                 t"ON CONFLICT (guild_id, config_key) DO UPDATE SET config_value = excluded.config_value",
             )
         await self.bot.db.commit()
@@ -275,17 +270,19 @@ class Config:
 
         Parameters
         ----------
+        *
         by_id : `bool = False`
             Whether to return the ID of the channel over an actual channel object or not. This is useful in cases where the channel may have been deleted.
 
         Returns
         -------
-        `GuildMessageable | int | None`
-            The channel or its ID in which the bot should log message deletions. Returns `None` if not configured or deleted.
-        /
+        `by_id = False -> GuildMessageable | None`
+            The channel in which the bot should log message deletions. Returns `None` if not configured or deleted.
+        `by_id = True -> int | None`
+            The ID of the channel in which the bot should log message deletions. Returns `None` if not configured or deleted.
         """
         async with self.bot.db.execute(
-            t"SELECT config_value FROM Config WHERE guild_id = {self.guild.id} AND config_key = {"messages_delete_channel"}",
+            t"SELECT config_value FROM Config WHERE guild_id = {self.guild.id} AND config_key = messages_delete_channel",
         ) as cursor:
             res = await cursor.fetchone()
             if not res:
@@ -325,11 +322,11 @@ class Config:
         """
         if not channel:
             await self.bot.db.execute(
-                t"DELETE FROM Config WHERE guild_id = {self.guild.id} AND config_key = {"messages_delete_channel"}",
+                t"DELETE FROM Config WHERE guild_id = {self.guild.id} AND config_key = messages_delete_channel",
             )
         else:
             await self.bot.db.execute(
-                t"INSERT INTO Config (guild_id, config_key, config_value) VALUES ({self.guild.id}, {"messages_delete_channel"}, {channel.id}) "
+                t"INSERT INTO Config (guild_id, config_key, config_value) VALUES ({self.guild.id}, messages_delete_channel, {channel.id}) "
                 t"ON CONFLICT (guild_id, config_key) DO UPDATE SET config_value = excluded.config_value",
             )
         await self.bot.db.commit()
@@ -350,17 +347,19 @@ class Config:
 
         Parameters
         ----------
+        *
         by_id : `bool = False`
             Whether to return the ID of the channel over an actual channel object or not. This is useful in cases where the channel may have been deleted.
 
         Returns
         -------
-        `GuildMessageable | int | None`
-            The channel or its ID in which the bot should log message edits. Returns `None` if not configured or deleted.
-        /
+        `by_id = False -> GuildMessageable | None`
+            The channel in which the bot should log message edits. Returns `None` if not configured or deleted.
+        `by_id = True -> int | None`
+            The ID of the channel in which the bot should log message edits. Returns `None` if not configured or deleted.
         """
         async with self.bot.db.execute(
-            t"SELECT config_value FROM Config WHERE guild_id = {self.guild.id} AND config_key = {"messages_edit_channel"}",
+            t"SELECT config_value FROM Config WHERE guild_id = {self.guild.id} AND config_key = messages_edit_channel",
         ) as cursor:
             res = await cursor.fetchone()
             if not res:
@@ -400,11 +399,11 @@ class Config:
         """
         if not channel:
             await self.bot.db.execute(
-                t"DELETE FROM Config WHERE guild_id = {self.guild.id} AND config_key = {"messages_edit_channel"}",
+                t"DELETE FROM Config WHERE guild_id = {self.guild.id} AND config_key = messages_edit_channel",
             )
         else:
             await self.bot.db.execute(
-                t"INSERT INTO Config (guild_id, config_key, config_value) VALUES ({self.guild.id}, {"messages_edit_channel"}, {channel.id}) "
+                t"INSERT INTO Config (guild_id, config_key, config_value) VALUES ({self.guild.id}, messages_edit_channel, {channel.id}) "
                 t"ON CONFLICT (guild_id, config_key) DO UPDATE SET config_value = excluded.config_value",
             )
         await self.bot.db.commit()
@@ -423,7 +422,7 @@ class Config:
             Whether the bot should provide previews for message links found in messages.
         """
         async with self.bot.db.execute(
-            t"SELECT config_value FROM Config WHERE guild_id = {self.guild.id} AND config_key = {"messages_preview"}",
+            t"SELECT config_value FROM Config WHERE guild_id = {self.guild.id} AND config_key = messages_preview",
         ) as cursor:
             res = await cursor.fetchone()
             if not res:
@@ -446,7 +445,7 @@ class Config:
         /
         """
         await self.bot.db.execute(
-            t"INSERT INTO Config (guild_id, config_key, config_value) VALUES ({self.guild.id}, {"messages_preview"}, {int(enabled)}) "
+            t"INSERT INTO Config (guild_id, config_key, config_value) VALUES ({self.guild.id}, messages_preview, {int(enabled)}) "
             t"ON CONFLICT (guild_id, config_key) DO UPDATE SET config_value = excluded.config_value",
         )
         await self.bot.db.commit()
@@ -465,7 +464,7 @@ class Config:
             Whether the bot should automatically enforce quarantine for channels.
         """
         async with self.bot.db.execute(
-            t"SELECT config_value FROM Config WHERE guild_id = {self.guild.id} AND config_key = {"moderation_quarantine_enforce_channels"}",
+            t"SELECT config_value FROM Config WHERE guild_id = {self.guild.id} AND config_key = moderation_quarantine_enforce_channels",
         ) as cursor:
             res = await cursor.fetchone()
             if not res:
@@ -488,7 +487,7 @@ class Config:
         /
         """
         await self.bot.db.execute(
-            t"INSERT INTO Config (guild_id, config_key, config_value) VALUES ({self.guild.id}, {"moderation_quarantine_enforce_channels"}, {int(enabled)}) "
+            t"INSERT INTO Config (guild_id, config_key, config_value) VALUES ({self.guild.id}, moderation_quarantine_enforce_channels, {int(enabled)}) "
             t"ON CONFLICT (guild_id, config_key) DO UPDATE SET config_value = excluded.config_value",
         )
         await self.bot.db.commit()
@@ -507,7 +506,7 @@ class Config:
             Whether the bot should automatically enforce quarantine for roles.
         """
         async with self.bot.db.execute(
-            t"SELECT config_value FROM Config WHERE guild_id = {self.guild.id} AND config_key = {"moderation_quarantine_enforce_roles"}",
+            t"SELECT config_value FROM Config WHERE guild_id = {self.guild.id} AND config_key = moderation_quarantine_enforce_roles",
         ) as cursor:
             res = await cursor.fetchone()
             if not res:
@@ -530,7 +529,7 @@ class Config:
         /
         """
         await self.bot.db.execute(
-            t"INSERT INTO Config (guild_id, config_key, config_value) VALUES ({self.guild.id}, {"moderation_quarantine_enforce_roles"}, {int(enabled)}) "
+            t"INSERT INTO Config (guild_id, config_key, config_value) VALUES ({self.guild.id}, moderation_quarantine_enforce_roles, {int(enabled)}) "
             t"ON CONFLICT (guild_id, config_key) DO UPDATE SET config_value = excluded.config_value",
         )
         await self.bot.db.commit()

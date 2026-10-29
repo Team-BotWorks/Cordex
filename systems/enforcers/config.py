@@ -40,8 +40,7 @@ class ConfigEnforcer(Cog):
         reset = 0
         if stale_guild_ids:
             try:
-                await self.bot.db.execute(t"DELETE FROM Config WHERE guild_id IN {tuple(stale_guild_ids)}")
-                await self.bot.db.commit()
+                await self.bot.delete_configs(*stale_guild_ids)
             except Exception:
                 log.exception("An exception occurred during the configuration resets. Moving on.")
             else:
@@ -56,7 +55,7 @@ class ConfigEnforcer(Cog):
 
     @Cog.listener("on_guild_remove")
     async def _listener_config_guildremove(self, guild : Guild) -> None:
-        await self.bot.config(guild).reset()
+        await self.bot.delete_configs(guild.id)
         await CasesManager(self.bot, guild).delete_all_cases()  # ⸻ This is probably not the right place to do this.
 
     @Cog.listener("on_guild_channel_delete")
