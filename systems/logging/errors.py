@@ -36,7 +36,7 @@ from core.exceptions import (
     send_bad_permissions_command,
     send_unimplemented_command,
 )
-from core.responses import FormatOverride, MessageType, format_send
+from core.responses import FormatOverride, MessageType, PunctuationOverride, format_send
 from core.utilities import codeblock, format_command, format_now, format_table
 
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
@@ -262,9 +262,22 @@ class ErrorLogger(Cog):
             return
 
         if isinstance(error, BotMissingPermissions):
-            await send_bad_operation(
+            if len(missing_permissions := error.missing_permissions) > 1:
+                s     = "s"
+                count = "several"
+            else:
+                s     = ""
+                count = "a"
+
+            await format_send(
                 interaction,
-                subtitle = "This command requires certain permissions to run that I lack",
+                MessageType.error,
+                title    = "run command",
+                subtitle = (
+                    f"This command requires {count} permission{s} to run that I lack:\n"
+                    f"{"\n".join(f"`{permission.replace("_", " ").title()}`" for permission in missing_permissions)}"
+                ),
+                override = FormatOverride(punctuation = PunctuationOverride(subtitle = False)),
             )
             return
 
