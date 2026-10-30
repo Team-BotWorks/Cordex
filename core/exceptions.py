@@ -122,7 +122,7 @@ async def send_bad_argument(
     /,
     *,
     title    : str = "run command",
-    subtitle : dict[str | tuple[str, ...] | None, str],
+    subtitle : dict[str | tuple[str, ...] | None, str] | str,
     footer   : str = "Bad argument",
 ) -> None:
     """
@@ -136,9 +136,10 @@ async def send_bad_argument(
     *
     title : `str = "run command"`
         The title of the warning.
-    subtitle : `dict[str | tuple[str, ...] | None, str]`
+    subtitle : `dict[str | tuple[str, ...] | None, str] | str`
         The subtitle of the warning.
 
+        - If `str` is passed, it will appear the same as passing `{None : "..."}`.
         - If `dict[str, str]` is passed, it will appear as "`Key`: Value".
         - If `dict[tuple[str, ...], str]` is passed, it will appear as "`Key1, Key2, ...`: Value".
         - If `dict[None, str]` is passed, it will appear as "Value" and be at the very top of all warnings.
@@ -148,6 +149,9 @@ async def send_bad_argument(
     footer : `str = "Bad argument"`
         The footer of the warning.
     """
+    if isinstance(subtitle, str):
+        subtitle = {None : subtitle}
+
     argument_nones : list[str]      = []
     argument_table : dict[str, str] = {}
     for argument, notice in subtitle.items():
