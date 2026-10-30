@@ -130,37 +130,37 @@ class ErrorLogger(Cog):
             )
 
         if context:
-            if isinstance(interaction := context, BaseInteraction):
-                if command := interaction.command:
-                    qualified_name = command.qualified_name
-                    command_id     = interaction.command_id
+            if isinstance(interaction := context, BaseInteraction) and interaction.command:
+                command = interaction.command
 
-                    table = format_table(
-                        {
-                            "Command"      : format_command(qualified_name),
-                            "Command Name" : f"/{qualified_name}",
-                            "Command ID"   : command_id,
-                        },
-                    )
+                qualified_name = command.qualified_name
+                command_id     = interaction.command_id
 
-                    container.add_items(
-                        VisibleLargeSeparator(),
-                        TextDisplay(
-                            "## Command\n"
-                           f"{table}",
-                        ),
-                    )
-            if isinstance(ctx := context, Context):
-                if command := ctx.command:
-                    table = format_table({"Command" : command.qualified_name})
+                table = format_table(
+                    {
+                        "Command"      : format_command(qualified_name),
+                        "Command Name" : f"/{qualified_name}",
+                        "Command ID"   : command_id,
+                    },
+                )
 
-                    container.add_items(
-                        VisibleLargeSeparator(),
-                        TextDisplay(
-                            "## Command\n"
-                           f"{table}",
-                        ),
-                    )
+                container.add_items(
+                    VisibleLargeSeparator(),
+                    TextDisplay(
+                        "## Command\n"
+                       f"{table}",
+                    ),
+                )
+            if isinstance(ctx := context, Context) and ctx.command:
+                table = format_table({"Command" : ctx.command.qualified_name})
+
+                container.add_items(
+                    VisibleLargeSeparator(),
+                    TextDisplay(
+                        "## Command\n"
+                       f"{table}",
+                    ),
+                )
 
         if error:
             container.add_items(
