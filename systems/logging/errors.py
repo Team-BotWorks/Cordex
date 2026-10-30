@@ -130,8 +130,7 @@ class ErrorLogger(Cog):
             )
 
         if context:
-            if isinstance(context, BaseInteraction):
-                interaction = context
+            if isinstance(interaction := context, BaseInteraction):
                 if command := interaction.command:
                     qualified_name = command.qualified_name
                     command_id     = interaction.command_id
@@ -151,8 +150,7 @@ class ErrorLogger(Cog):
                            f"{table}",
                         ),
                     )
-            if isinstance(context, Context):
-                ctx = context
+            if isinstance(ctx := context, Context):
                 if command := ctx.command:
                     table = format_table({"Command" : command.qualified_name})
 
@@ -196,16 +194,16 @@ class ErrorLogger(Cog):
         *_args    : str,
         **_kwargs : int,
     ) -> None:
-        exception_type, exception, traceback = exc_info()
+        _, exception, _ = exc_info()
 
         if exception is None:
             await self._send_error(
-                title  =  "Bot Event Error",
+                title  = "Bot Event Error",
                 error  = f"{event}: Unknown exception",
             )
             return
 
-        traceback = "".join(format_exception(exception_type, exception, traceback))
+        traceback = "".join(format_exception(exception))
 
         await self._send_error(
             title     =  "Bot Event Error",
@@ -275,7 +273,7 @@ class ErrorLogger(Cog):
                 title    = "run command",
                 subtitle = (
                     f"This command requires {count} permission{s} to run that I lack:\n"
-                    f"{"\n".join(f"`{permission.replace("_", " ").title()}`" for permission in missing_permissions)}"
+                    f"{"\n".join(f"- `{permission.replace("_", " ").title()}`" for permission in missing_permissions)}"
                 ),
                 override = FormatOverride(punctuation = PunctuationOverride(subtitle = False)),
             )
@@ -283,7 +281,7 @@ class ErrorLogger(Cog):
 
         await send_bad_operation(interaction)
 
-        traceback = "".join(format_exception(type(error), error, error.__traceback__))
+        traceback = "".join(format_exception(error))
 
         await self._send_error(
             title     = "Command Error",
@@ -310,9 +308,8 @@ class ErrorLogger(Cog):
         if isinstance(error, BadPermissionsPrefixCommand):
             return
 
-        await send_bad_operation(ctx)
-
-        traceback = "".join(format_exception(type(error), error, error.__traceback__))
+        traceback = "".join(format_exception(error))
+        await send_bad_operation(ctx, subtitle = codeblock(traceback))
 
         await self._send_error(
             title     = "Prefix Command Error",
@@ -338,13 +335,7 @@ class ErrorLogger(Cog):
         message     = context.get("message")
         message_str = str(message) or "No message"
 
-        traceback = "".join(
-            format_exception(
-                type(exception),
-                exception,
-                exception.__traceback__,
-            ),
-        ) if isinstance(exception, BaseException) else message_str
+        traceback = "".join(format_exception(exception)) if isinstance(exception, BaseException) else message_str
 
         loop.create_task(
             self._send_error(
