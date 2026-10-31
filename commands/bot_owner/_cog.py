@@ -4,11 +4,17 @@ from typing import final, override
 from discord import Forbidden, HTTPException, Member, Message, Reaction, User
 from discord.ext.commands import Cog
 from discord.ext.commands import command as prefix_command
+from discord.ext.commands import group as prefix_group
 
 from bot import Context, Cordex
 from core.exceptions import BadPermissionsPrefixCommand
 from core.utilities import is_bot_owner
 
+from .blocklist import (
+    run_botowner_blocklist_add,
+    run_botowner_blocklist_remove,
+    run_botowner_blocklist_view,
+)
 from .eval import run_botowner_eval
 from .restart import run_botowner_restart
 from .shutdown import run_botowner_shutdown
@@ -108,6 +114,26 @@ class BotOwnerCommands(Cog):
     @prefix_command(name = "sync")
     async def cmd_botowner_sync(self, ctx : Context) -> None:
         await run_botowner_sync(ctx)
+
+    # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
+    # .blocklist Commands
+    # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
+
+    @prefix_group(name = "blocklist")
+    async def cmd_botowner_blocklist(self, _ctx : Context) -> None:
+        pass
+
+    @cmd_botowner_blocklist.command(name = "add")
+    async def cmd_botowner_blocklist_add(self, ctx : Context, target_id : int) -> None:
+        await run_botowner_blocklist_add(ctx, target_id)
+
+    @cmd_botowner_blocklist.command(name = "view")
+    async def cmd_botowner_blocklist_view(self, ctx : Context) -> None:
+        await run_botowner_blocklist_view(ctx)
+
+    @cmd_botowner_blocklist.command(name = "remove")
+    async def cmd_botowner_blocklist_remove(self, ctx : Context, target_id : int) -> None:
+        await run_botowner_blocklist_remove(ctx, target_id)
 
 
 async def setup(bot : Cordex) -> None:

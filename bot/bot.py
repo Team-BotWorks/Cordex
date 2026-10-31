@@ -37,6 +37,7 @@ from constants import (
     DisplayNameFont,
 )
 from core.state import (
+    BlocklistManager,
     Config,
     Connection,
     Restriction,
@@ -219,10 +220,35 @@ class _ContextClass(BaseContext["Cordex"]):
 class _Tree(CommandTree):
     @override
     async def interaction_check(self, interaction : Interaction) -> bool:  # pyright: ignore[reportIncompatibleMethodOverride]
-        command = interaction.command
-        client  = interaction.client
-        guild   = interaction.guild
-        user    = interaction.user
+        command   = interaction.command
+        client    = interaction.client
+        blocklist = client.blocklist
+        guild     = interaction.guild
+        user      = interaction.user
+
+        # ⸻ Blocklisting
+
+        if not guild:
+            if await blocklist.is_blocklisted(user):
+                await interaction.response.send_message(
+                   f"{DENIED_EMOJI} **Failed to run command!**\n"
+                    "You have been blocklisted from using this bot and all of its features.\n"
+                    "-# Bad request. Contact support if this was a mistake.",
+                    ephemeral = True,
+                )
+                return False
+            return True
+
+        if await blocklist.is_blocklisted(guild):
+            await interaction.response.send_message(
+               f"{DENIED_EMOJI} **Failed to run command!**\n"
+                "This guild has been blocklisted from using this bot and all of its features.\n"
+                "-# Bad request. Contact support if this was a mistake.",
+                ephemeral = True,
+            )
+            return False
+
+        # ⸻ Restrictions
 
         if isinstance(command, ContextMenu | None):
             return True
@@ -285,6 +311,8 @@ class Cordex(Bot):
         self.version = "0.9.0"
 
         self.db : Connection
+
+        self.blocklist = BlocklistManager(self)
 
         self._api_commands_cache         : list[APICommand]                   = []
         self._command_restrictions_cache : dict[tuple[int, str], Restriction] = {}
