@@ -7,7 +7,7 @@ from discord import CustomActivity, DiscordException, Status
 from bot import Context, log
 from constants import COG_EMOJI
 from core.exceptions import send_bad_operation
-from core.responses import MessageType, format_send
+from core.responses import MessageType
 from core.utilities import codeblock
 
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
@@ -70,8 +70,7 @@ async def run_botowner_restart(ctx : Context) -> None:
         bot.restarting = False
 
         if not bot.is_closed():
-            await format_send(
-                ctx,
+            await ctx.format_send(
                 MessageType.error,
                 title    = "restart bot",
                 subtitle = codeblock(e),
