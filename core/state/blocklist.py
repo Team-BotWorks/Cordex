@@ -3,10 +3,10 @@ from typing import TYPE_CHECKING, Literal, cast, final, overload
 from discord import Guild, Member, NotFound, User
 
 from constants import COLOR_BLACK
-from core.paginator import Footer, UnnamedPaginator
 
 if TYPE_CHECKING:
     from bot import Cordex
+    from core.paginator import UnnamedPaginator
 
 type Blocklistable = User | Member | Guild
 
@@ -148,6 +148,8 @@ class BlocklistManager:
                 target_type = "Unknown"
 
             blocklist.append(f"**{block[1]} | {target_type}**")
+
+        from core.paginator import Footer, UnnamedPaginator  # ruff: ignore[import-outside-top-level]
 
         class BlocklistPaginator(UnnamedPaginator):
             def __init__(self) -> None:
