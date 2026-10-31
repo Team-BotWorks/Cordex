@@ -5,7 +5,7 @@ from importlib import import_module
 from logging import getLogger as get_logger
 from pathlib import Path
 from pkgutil import walk_packages
-from typing import NotRequired, TypedDict, cast, final, override
+from typing import TYPE_CHECKING, NotRequired, TypedDict, cast, final, override
 
 from aiosqlite import Row
 from discord import Color, Guild, Intents, Message, Status, User
@@ -23,7 +23,6 @@ from constants import (
     DisplayNameFont,
 )
 from core.state import (
-    BlocklistManager,
     Config,
     Connection,
     Restriction,
@@ -32,6 +31,9 @@ from core.state import (
 
 from .context import Context, Tree
 from .types import NOT_PASSED, DisplayNameStyle
+
+if TYPE_CHECKING:
+    from core.state import BlocklistManager
 
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 # Bot & Client Management
@@ -64,7 +66,7 @@ class Cordex(Bot):
 
         self.db : Connection
 
-        self.blocklist = BlocklistManager(self)
+        self.blocklist : BlocklistManager
 
         self._api_commands_cache         : list[APICommand]                   = []
         self._command_restrictions_cache : dict[tuple[int, str], Restriction] = {}
@@ -308,6 +310,9 @@ class Cordex(Bot):
             log.info("Logging in as %s, %s", self.user.name, self.user.id)
 
         self.developers = [user for developer_id in DEVELOPER_IDS if (user := await self.fetch_user(developer_id))]
+
+        from core.state import BlocklistManager  # ruff: ignore[import-outside-top-level]
+        self.blocklist = BlocklistManager(self)
 
         # ⸻ AIOSQLite
 
