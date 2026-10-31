@@ -13,13 +13,14 @@ from types import (
 )
 from typing import TYPE_CHECKING, Self, TypedDict, Unpack, cast, final, override
 
-from discord import Embed, File, Member, Message
+from discord import AllowedMentions, Embed, File, Member, Message
 from discord import Interaction as BaseInteraction
 from discord.app_commands import CommandTree, ContextMenu
 from discord.ext.commands import Context as BaseContext
 from discord.ext.commands.view import StringView
 
 from constants import DENIED_EMOJI
+from core.responses import FormatOverride
 from core.state import (
     is_restrictable,
     is_restriction_required,
@@ -36,10 +37,12 @@ type _InspectableObject = (
     | FrameType
     | CodeType
 )
-
 type _Callback = Callable[[Interaction], Awaitable[None]]
+type _Check = Callable[[object], bool]
 
 if TYPE_CHECKING:
+    from core.responses import MessageType
+
     from .bot import Cordex
 
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
@@ -56,6 +59,54 @@ class _ContextKwargs(TypedDict, total = False):
 class Context(BaseContext["Cordex"]):
     def __init__(self, **kwargs : Unpack[_ContextKwargs]) -> None:
         super().__init__(**kwargs)
+
+    async def format_send(
+        self,
+        msg_type     : MessageType,
+        /,
+        *,
+        title        : str,
+        subtitle     : str             | None = None,
+        footer       : str             | None = None,
+        reply        : bool                   = True,
+        delete_after : float           | None = None,
+        mentions     : AllowedMentions | None = None,
+        override     : FormatOverride  | None = None,
+    ) -> Message:
+        from core.responses import format_message  # ruff: ignore[import-outside-top-level]
+
+        content = format_message(
+            msg_type,
+            title    = title,
+            subtitle = subtitle,
+            footer   = footer,
+            override = override,
+        )
+
+        if reply:
+            if delete_after is not None:
+                return await self.reply(
+                    content          = content,
+                    delete_after     = delete_after,
+                    allowed_mentions = mentions or AllowedMentions.all(),
+                )
+
+            return await self.reply(
+                content          = content,
+                allowed_mentions = mentions or AllowedMentions.all(),
+            )
+
+        if delete_after is not None:
+            return await self.send(
+                content          = content,
+                delete_after     = delete_after,
+                allowed_mentions = mentions or AllowedMentions.all(),
+            )
+
+        return await self.send(
+            content          = content,
+            allowed_mentions = mentions or AllowedMentions.all(),
+        )
 
     async def send_file(
         self,
@@ -116,43 +167,34 @@ class Context(BaseContext["Cordex"]):
 
         return await self.send_button(func)
 
-    type Check = Callable[[object], bool]
-
     async def show_attrs(
         self,
         target   : object,
-        check    : Check | None = None,
+        check    : _Check | None = None,
         /,
         *,
-        tall     : bool  | None = None,
-        dunders  : bool         = False,
-        privates : bool         = False,
+        dunders  : bool          = False,
+        privates : bool          = False,
     ) -> Message:
-        def _filter(attr : str) -> bool:
-            if attr.startswith("__") and attr.endswith("__"):
+        def _filter(attribute : str) -> bool:
+            if attribute.startswith("__") and attribute.endswith("__"):
                 return dunders
-            if attr.startswith("_"):
+            if attribute.startswith("_"):
                 return privates
             return True
 
         if check is not None:
-            attrs = [
-                attr for attr in dir(target)
-                if _filter(attr) and
-                check(cast("object", getattr_static(target, attr)))
+            attributes = [
+                attribute for attribute in dir(target)
+                if _filter(attribute) and
+                check(cast("object", getattr_static(target, attribute)))
             ]
         else:
-            attrs = [attr for attr in dir(target) if _filter(attr)]
-
-        if tall is None:
-            estimated_length = sum(len(a) for a in attrs) + (2 * (len(attrs) - 1))
-            tall = estimated_length > 80
-
-        joiner = ",\n" if tall else ", "
+            attributes = [attribute for attribute in dir(target) if _filter(attribute)]
 
         output = (
             "```py\n"
-           f"{joiner.join(attrs)}\n"
+           f"{",\n".join(attributes)}\n"
             "```"
         )
 
@@ -163,7 +205,7 @@ class Context(BaseContext["Cordex"]):
         qualname = getattr(target, "__qualname__", "object")
         content  = f"```{module}/{qualname}```"
         filename = f"{module.split('/')[-1]}.py"
-        return await self.send_file(content, file_content = joiner.join(attrs), file_name = filename)
+        return await self.send_file(content, file_content = ",\n".join(attributes), file_name = filename)
 
     async def show_def(self, target : _InspectableObject, /) -> Message:
         if isinstance(target, property):
