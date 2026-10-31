@@ -1,5 +1,6 @@
-from bot import Context
+from bot import Context, log
 from core.exceptions import send_bad_argument
+from core.responses import MessageType, format_send
 
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 # .blocklist remove Logic
@@ -18,4 +19,9 @@ async def run_botowner_blocklist_remove(ctx : Context, target_id : int) -> None:
         await send_bad_argument(ctx, subtitle = "Target is not blocklisted.")
         return
 
-    await manager.remove(target)
+    try:
+        await manager.remove(target)
+    except Exception:
+        log.exception("An exception occured during the blocklist removal")
+    else:
+        await format_send(ctx, MessageType.success, title = f"unblocklisted {target_id}")

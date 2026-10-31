@@ -1,5 +1,6 @@
-from bot import Context
+from bot import Context, log
 from core.exceptions import send_bad_argument
+from core.responses import MessageType, format_send
 
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 # .blocklist add Logic
@@ -18,4 +19,9 @@ async def run_botowner_blocklist_add(ctx : Context, target_id : int) -> None:
         await send_bad_argument(ctx, subtitle = "Target is already blocklisted.")
         return
 
-    await manager.add(target)
+    try:
+        await manager.add(target)
+    except Exception:
+        log.exception("An exception occured during the blocklist addition")
+    else:
+        await format_send(ctx, MessageType.success, title = f"blocklisted {target_id}")
