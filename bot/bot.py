@@ -1,37 +1,23 @@
 # pyright: reportImportCycles = false
 
 from asyncio import to_thread
-from collections.abc import Awaitable, Callable
 from importlib import import_module
-from inspect import getattr_static, getsource
-from io import BytesIO
 from logging import getLogger as get_logger
 from pathlib import Path
 from pkgutil import walk_packages
-from types import (
-    CodeType,
-    FrameType,
-    FunctionType,
-    MethodType,
-    ModuleType,
-    TracebackType,
-)
-from typing import NotRequired, Self, TypedDict, Unpack, cast, final, override
+from typing import NotRequired, TypedDict, cast, final, override
 
 from aiosqlite import Row
-from discord import Color, Embed, File, Guild, Intents, Member, Message, Status, User
+from discord import Color, Guild, Intents, Message, Status, User
 from discord import Interaction as BaseInteraction
 from discord.app_commands import AppCommand as APICommand
-from discord.app_commands import CommandTree, ContextMenu
 from discord.ext.commands import Bot, Cog, when_mentioned_or
 from discord.ext.commands import Context as BaseContext
-from discord.ext.commands.view import StringView
 from discord.http import Route
 
 from constants import (
     COLOR_BLACK,
     COLOR_WHITE,
-    DENIED_EMOJI,
     DEVELOPER_IDS,
     DisplayNameEffect,
     DisplayNameFont,
@@ -42,24 +28,10 @@ from core.state import (
     Connection,
     Restriction,
     connect,
-    is_restrictable,
-    is_restriction_required,
 )
 
+from .context import Context, Tree
 from .types import NOT_PASSED, DisplayNameStyle
-from .ui import Button, LayoutView, Modal, View, button
-
-type _InspectableObject = (
-    ModuleType
-    | type
-    | MethodType
-    | FunctionType
-    | TracebackType
-    | FrameType
-    | CodeType
-)
-
-type _Callback = Callable[[Interaction], Awaitable[None]]
 
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 # Bot & Client Management
@@ -68,226 +40,6 @@ type _Callback = Callable[[Interaction], Awaitable[None]]
 PACKAGE_NAMES = ["commands", "core", "systems"]
 
 log = get_logger("Cordex")
-
-# ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
-# Context and Interaction Classes
-# ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
-
-
-class _ContextKwargs(TypedDict, total = False):
-    message : Message
-    bot     : Cordex
-    view    : StringView
-
-
-class _ContextClass(BaseContext["Cordex"]):
-    def __init__(self, **kwargs : Unpack[_ContextKwargs]) -> None:
-        super().__init__(**kwargs)
-
-    async def send_file(
-        self,
-        content      : str | None = None,
-        /,
-        *,
-        file_content : str,
-        file_name    : str,
-    ) -> Message:
-        return await self.send(content = content, file = File(BytesIO(file_content.encode()), filename = file_name))
-
-    async def safe_send(self, content : str) -> Message:
-        if len(content) < 2000:
-            return await self.send(content)
-
-        return await self.send_file(file_content = content, file_name = "content.txt")
-
-    async def send_button(self, callback : _Callback, /) -> Message:
-        @final
-        class _ViewButton(View):
-            def __init__(self, view_callback : _Callback, /) -> None:
-                super().__init__(timeout = None)
-                self.callback = view_callback
-
-            @button(label = "Click me!")
-            async def btn_basic(self, interaction : Interaction, _button : Button[Self]) -> None:
-                try:
-                    await self.callback(interaction)
-                except Exception as e:
-                    if not interaction.response.is_done():
-                        await interaction.response.send_message(
-                           f"{DENIED_EMOJI} **Error! :[**\n"
-                            "```py\n"
-                           f"{e}\n"
-                            "```",
-                            ephemeral = True,
-                        )
-                    else:
-                        await interaction.followup.send(
-                           f"{DENIED_EMOJI} **Error! :[**\n"
-                            "```py\n"
-                           f"{e}\n"
-                            "```",
-                            ephemeral = True,
-                        )
-
-        return await self.send(view = _ViewButton(callback))
-
-    async def send_embed(self, embed : Embed, /) -> Message:
-        return await self.send(embed = embed)
-
-    async def send_view(self, view : View | LayoutView, /) -> Message:
-        return await self.send(view = view)
-
-    async def send_modal(self, modal : Modal, /) -> Message:
-        async def func(interaction : Interaction) -> None:
-            await interaction.response.send_modal(modal)
-
-        return await self.send_button(func)
-
-    type Check = Callable[[object], bool]
-
-    async def show_attrs(
-        self,
-        target   : object,
-        check    : Check | None = None,
-        /,
-        *,
-        tall     : bool  | None = None,
-        dunders  : bool         = False,
-        privates : bool         = False,
-    ) -> Message:
-        def _filter(attr : str) -> bool:
-            if attr.startswith("__") and attr.endswith("__"):
-                return dunders
-            if attr.startswith("_"):
-                return privates
-            return True
-
-        if check is not None:
-            attrs = [
-                attr for attr in dir(target)
-                if _filter(attr) and
-                check(cast("object", getattr_static(target, attr)))
-            ]
-        else:
-            attrs = [attr for attr in dir(target) if _filter(attr)]
-
-        if tall is None:
-            estimated_length = sum(len(a) for a in attrs) + (2 * (len(attrs) - 1))
-            tall = estimated_length > 80
-
-        joiner = ",\n" if tall else ", "
-
-        output = (
-            "```py\n"
-           f"{joiner.join(attrs)}\n"
-            "```"
-        )
-
-        if len(output) < 2000:
-            return await self.send(output)
-
-        module   = getattr(target, "__module__", "global").replace(".", "/")
-        qualname = getattr(target, "__qualname__", "object")
-        content  = f"```{module}/{qualname}```"
-        filename = f"{module.split('/')[-1]}.py"
-        return await self.send_file(content, file_content = joiner.join(attrs), file_name = filename)
-
-    async def show_def(self, target : _InspectableObject, /) -> Message:
-        if isinstance(target, property):
-            fget = target.fget
-            if not fget:
-                error = "Property has no getter method."
-                raise TypeError(error)
-            target = fget
-
-        source = getsource(target)
-        msg    = (
-            "```py\n"
-           f"{source}\n"
-            "```"
-        )
-
-        if len(msg) < 2000:
-            return await self.send(msg)
-
-        module   = getattr(target, "__module__", "global").replace(".", "/")
-        qualname = getattr(target, "__qualname__", "object")
-        content  = f"```{module}/{qualname}```"
-        filename = f"{module.split('/')[-1]}.py"
-        return await self.send_file(content, file_content = source, file_name = filename)
-
-
-class _Tree(CommandTree):
-    @override
-    async def interaction_check(self, interaction : Interaction) -> bool:  # pyright: ignore[reportIncompatibleMethodOverride]
-        command   = interaction.command
-        client    = interaction.client
-        blocklist = client.blocklist
-        guild     = interaction.guild
-        user      = interaction.user
-
-        # ⸻ Blocklisting
-
-        if not guild:
-            if await blocklist.is_blocklisted(user):
-                await interaction.response.send_message(
-                   f"{DENIED_EMOJI} **Failed to run command!**\n"
-                    "You have been blocklisted from using this bot and all of its features.\n"
-                    "-# Bad request. Contact support if this was a mistake.",
-                    ephemeral = True,
-                )
-                return False
-            return True
-
-        if await blocklist.is_blocklisted(guild):
-            await interaction.response.send_message(
-               f"{DENIED_EMOJI} **Failed to run command!**\n"
-                "This guild has been blocklisted from using this bot and all of its features.\n"
-                "-# Bad request. Contact support if this was a mistake.",
-                ephemeral = True,
-            )
-            return False
-
-        # ⸻ Restrictions
-
-        if isinstance(command, ContextMenu | None):
-            return True
-
-        if not guild or not isinstance(user, Member):
-            return True
-
-        if not is_restrictable(command):
-            return True
-
-        if user == guild.owner:
-            return True
-
-        restriction = client.get_command_restriction(guild, command.qualified_name)
-        if restriction is None:
-            if is_restriction_required(command):
-                await interaction.response.send_message(
-                   f"{DENIED_EMOJI} **Failed to run command!**\n"
-                    "This command requires restriction, but none have been configured.\n",
-                    ephemeral = True,
-                )
-                return False
-            return True
-
-        if restriction.allows(user):
-            return True
-
-        await interaction.response.send_message(
-           f"{DENIED_EMOJI} **Failed to run command!**\n"
-            "You are not authorized to run this command.\n"
-            "-# Bad request.",
-            ephemeral = True,
-        )
-        return False
-
-
-Context              = _ContextClass
-Interaction          = BaseInteraction["Cordex"]
-ContextOrInteraction = Interaction | Context
 
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 # Cordex Class
@@ -306,7 +58,7 @@ class Cordex(Bot):
             help_command            = None,
             intents                 = Intents.all(),
             status                  = Status.online,
-            tree_cls                = _Tree,
+            tree_cls                = Tree,
         )
         self.version = "0.9.0"
 
@@ -544,7 +296,7 @@ class Cordex(Bot):
         *,
         cls    : type[ContextT] | None = None,
     ) -> ContextT | Context:
-        return await super().get_context(origin, cls = cls or _ContextClass)
+        return await super().get_context(origin, cls = cls or Context)
 
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
     # setup_hook

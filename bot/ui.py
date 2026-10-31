@@ -1,8 +1,7 @@
 # pyright: reportIncompatibleMethodOverride = false
-# ruff: file-ignore[quoted-annotation]
 from collections.abc import Awaitable, Callable, Iterable
 from contextlib import suppress
-from typing import TYPE_CHECKING, Self, final, override
+from typing import Self, final, override
 from warnings import warn
 
 from discord import (
@@ -71,8 +70,7 @@ __all__ = [
     "select",
 ]
 
-if TYPE_CHECKING:
-    from .bot import Interaction
+from .context import Interaction
 
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 # Bot UI
@@ -157,7 +155,7 @@ class _AcceptButton(Button["Confirmation"]):
         self.on_choice = on_choice
 
     @override
-    async def callback(self, interaction : "Interaction") -> None:
+    async def callback(self, interaction : Interaction) -> None:
         await self.on_choice(interaction)
         if self.view:
             await self.view.on_choice()
@@ -170,7 +168,7 @@ class _DenyButton(Button["Confirmation"]):
         self.on_choice = on_choice
 
     @override
-    async def callback(self, interaction : "Interaction") -> None:
+    async def callback(self, interaction : Interaction) -> None:
         await self.on_choice(interaction)
         if self.view:
             await self.view.on_choice()
@@ -227,7 +225,7 @@ class Modal(BaseModal):
     """
 
     @override
-    async def on_submit(self, interaction : "Interaction", /) -> None:
+    async def on_submit(self, interaction : Interaction, /) -> None:
         pass
 
     def add_text(self, text : str, /) -> Self:
