@@ -17,7 +17,7 @@ class Connection(AiosqliteConnection):
     def execute(self, sql : Template, /) -> Result[Cursor]:
         return super().execute("?".join(sql.strings), sql.values)
 
-    def base_execute[I](self, sql : str, parameters : list[I] | None = None, /) -> Result[Cursor]:
+    def base_execute(self, sql : str, parameters : list[object] | None = None, /) -> Result[Cursor]:
         if parameters is None:
             parameters = []
 
