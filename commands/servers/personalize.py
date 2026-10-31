@@ -187,7 +187,7 @@ class _ImageModal(Modal):
             await send_bad_argument(
                 interaction,
                 title    = f"set {self.target}",
-                subtitle = {None : f"Upload an image or choose to reset the {self.target}."},
+                subtitle = f"Upload an image or choose to reset the {self.target}.",
             )
             return
 
@@ -195,7 +195,7 @@ class _ImageModal(Modal):
             await send_bad_argument(
                 interaction,
                 title    = f"set {self.target}",
-                subtitle = {None : "The file must be an image."},
+                subtitle =  "The file must be an image.",
             )
             return
 

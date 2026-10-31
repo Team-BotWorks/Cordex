@@ -20,7 +20,7 @@ async def run_moderation_lockdown_remove(interaction : Interaction) -> None:
     """
     channel = interaction.channel
     if not isinstance(channel, GuildMessageableChannel):
-        await send_bad_argument(interaction, subtitle = {None : "Threads cannot be locked down, and thus cannot be removed from lockdown."})
+        await send_bad_argument(interaction, subtitle = "Threads cannot be locked down, and thus cannot be removed from lockdown.")
         return
 
     await send_moderation_modal(interaction, ActionType.lockdown_remove, channel)

@@ -20,7 +20,7 @@ async def run_moderation_lockdown_add(interaction : Interaction) -> None:
     """
     channel = interaction.channel
     if not isinstance(channel, GuildMessageableChannel):
-        await send_bad_argument(interaction, subtitle = {None : "Threads cannot be locked down."})
+        await send_bad_argument(interaction, subtitle = "Threads cannot be locked down.")
         return
 
     await send_moderation_modal(interaction, ActionType.lockdown_add, channel)

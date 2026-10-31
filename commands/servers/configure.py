@@ -59,14 +59,14 @@ class _MessagesEditSelect(ChannelSelect["_ConfigurationView"]):
             await send_bad_argument(
                 interaction,
                 title    = "set edit channel",
-                subtitle = {None : "I don't have permissions to send messages in that channel."},
+                subtitle = "I don't have permissions to send messages in that channel.",
             )
             return
         if not permissions.view_channel:
             await send_bad_argument(
                 interaction,
                 title    = "set edit channel",
-                subtitle = {None : "I don't have permissions to view that channel."},
+                subtitle = "I don't have permissions to view that channel.",
             )
             return
 
@@ -114,14 +114,14 @@ class _MessagesDeleteSelect(ChannelSelect["_ConfigurationView"]):
             await send_bad_argument(
                 interaction,
                 title    = "set delete channel",
-                subtitle = {None : "I don't have permissions to send messages in that channel."},
+                subtitle = "I don't have permissions to send messages in that channel.",
             )
             return
         if not permissions.view_channel:
             await send_bad_argument(
                 interaction,
                 title    = "set delete channel",
-                subtitle = {None : "I don't have permissions to view that channel."},
+                subtitle = "I don't have permissions to view that channel.",
             )
             return
 
@@ -201,14 +201,14 @@ class _ModerationLoggingSelect(ChannelSelect["_ConfigurationView"]):
             await send_bad_argument(
                 interaction,
                 title    = "set logging channel",
-                subtitle = {None : "I don't have permissions to send messages in that channel."},
+                subtitle = "I don't have permissions to send messages in that channel.",
             )
             return
         if not permissions.view_channel:
             await send_bad_argument(
                 interaction,
                 title    = "set logging channel",
-                subtitle = {None : "I don't have permissions to view that channel."},
+                subtitle = "I don't have permissions to view that channel.",
             )
             return
 
@@ -249,7 +249,7 @@ class _ModerationQuarantineRoleSelect(RoleSelect["_ConfigurationView"]):
             await send_bad_argument(
                 interaction,
                 title    = "set quarantine role",
-                subtitle = {None : "That role is above or equal to my highest role, so I can't assign it."},
+                subtitle = "That role is above or equal to my highest role, so I can't assign it.",
             )
 
         if not self.view:

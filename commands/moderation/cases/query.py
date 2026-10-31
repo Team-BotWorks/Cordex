@@ -83,10 +83,7 @@ async def run_moderation_cases_query(
         case_filter is None for case_filter in
         (action_type, moderator, target, channel, expired, before, after)
     ):
-        await send_bad_argument(
-            interaction,
-            subtitle = {None : "At least one filter must be chosen."},
-        )
+        await send_bad_argument(interaction, subtitle = "At least one filter must be chosen.")
         return
 
     if before:
