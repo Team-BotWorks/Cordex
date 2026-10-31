@@ -240,20 +240,21 @@ class Tree(CommandTree):
         guild     = interaction.guild
         user      = interaction.user
 
-        # ⸻ Blocklisting
-
-        if not guild:
-            if await blocklist.is_blocklisted(user):
-                await interaction.response.send_message(
-                   f"{DENIED_EMOJI} **Failed to run command!**\n"
-                    "You have been blocklisted from using this bot and all of its features.\n"
-                    "-# Bad request. Contact support if this was a mistake.",
-                    ephemeral = True,
-                )
-                return False
+        if isinstance(command, ContextMenu | None):
             return True
 
-        if await blocklist.is_blocklisted(guild):
+        # ⸻ Blocklisting
+
+        if await blocklist.is_blocklisted(user):
+            await interaction.response.send_message(
+               f"{DENIED_EMOJI} **Failed to run command!**\n"
+                "You have been blocklisted from using this bot and all of its features.\n"
+                "-# Bad request. Contact support if this was a mistake.",
+                ephemeral = True,
+            )
+            return False
+
+        if guild and await blocklist.is_blocklisted(guild):
             await interaction.response.send_message(
                f"{DENIED_EMOJI} **Failed to run command!**\n"
                 "This guild has been blocklisted from using this bot and all of its features.\n"
@@ -263,9 +264,6 @@ class Tree(CommandTree):
             return False
 
         # ⸻ Restrictions
-
-        if isinstance(command, ContextMenu | None):
-            return True
 
         if not guild or not isinstance(user, Member):
             return True
