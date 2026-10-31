@@ -1,6 +1,9 @@
+from discord import User
+
 from bot import Context, log
 from core.exceptions import send_bad_argument
 from core.responses import MessageType
+from core.utilities import is_bot_owner
 
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 # .blocklist add Logic
@@ -17,6 +20,10 @@ async def run_botowner_blocklist_add(ctx : Context, target_id : int) -> None:
 
     if await manager.is_blocklisted(target):
         await send_bad_argument(ctx, subtitle = "Target is already blocklisted.")
+        return
+
+    if isinstance(target, User) and is_bot_owner(target):
+        await send_bad_argument(ctx, subtitle = "You cannnot blocklist bot owners.")
         return
 
     try:
