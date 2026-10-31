@@ -20,7 +20,6 @@ from discord.ext.commands import Context as BaseContext
 from discord.ext.commands.view import StringView
 
 from constants import DENIED_EMOJI
-from core.responses import FormatOverride
 from core.state import (
     is_restrictable,
     is_restriction_required,
@@ -41,7 +40,7 @@ type _Callback = Callable[[Interaction], Awaitable[None]]
 type _Check = Callable[[object], bool]
 
 if TYPE_CHECKING:
-    from core.responses import MessageType
+    from core.responses import FormatOverride, MessageType
 
     from .bot import Cordex
 
