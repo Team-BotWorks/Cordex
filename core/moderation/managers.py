@@ -67,8 +67,10 @@ class LockdownManager:
 
         Returns
         -------
-        `set[GuildChannel] | set[int]`
-            Every channel or channel ID in lockdown found in the database.
+        `by_id = False -> set[GuildChannel]`
+            Every channel in lockdown found in the database.
+        `by_id = True -> set[int]`
+            The ID of every channel in lockdown found in the database.
         """
         async with self.bot.db.execute(
             t"SELECT channel_id FROM Lockdowns WHERE guild_id = {self.guild.id}",

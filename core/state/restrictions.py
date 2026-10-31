@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import final, overload
+from typing import overload
 
 from discord import Member
 from discord.app_commands import Command, Group
@@ -14,7 +14,6 @@ from discord.ext.commands import Cog, GroupCog
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
 
-@final
 @dataclass(frozen = True, slots = True)
 class Restriction:
     """
@@ -79,8 +78,10 @@ def unrestrictable[
 
     Returns
     -------
-    `Command[GroupT, P, T] | GroupCog`
-        The command or group of commands marked as unrestrictable.
+    `target : Command[GroupT, P, T] -> Command[GroupT, P, T]`
+        The command marked as unrestrictable.
+    `target : type[GroupCog] -> CogT`
+        The cog with its group of commands marked as unrestrictable.
     """
     if not isinstance(target, Command):
         setattr(target, "__unrestrictable__", True)  # ruff: ignore[set-attr-with-constant]
@@ -139,8 +140,10 @@ def requires_restriction[
 
     Returns
     -------
-    `Command[GroupT, P, T] | GroupCog`
-        The command or group of commands marked as restricted.
+    `target : Command[GroupT, P, T] -> Command[GroupT, P, T]`
+        The command marked as requiring restriction.
+    `target : type[GroupCog] -> CogT`
+        The cog with its group of commands marked as requiring restriction.
     """
     if not isinstance(target, Command):
         setattr(target, "__requires_restriction__", True)  # ruff: ignore[set-attr-with-constant]

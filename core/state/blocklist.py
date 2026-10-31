@@ -52,8 +52,10 @@ class BlocklistManager:
 
         Returns
         -------
-        `set[User | Guild] | set[tuple[type[User] | type[Guild], int]]`
-            Every blocklisted user/member/guild or target ID found in the database.
+        `by_id = False -> set[User | Guild]`
+            Every blocklisted user/guild found in the database.
+        `by_id = True -> set[tuple[type[User | Guild], int]]`
+            Tuples of the type and ID of every blocklisted user/guild found in the database.
         """
         async with self.bot.db.execute(t"SELECT target_id, target_type FROM Blocklists") as cursor:
             rows = await cursor.fetchall()
