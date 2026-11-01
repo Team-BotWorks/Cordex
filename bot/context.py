@@ -123,15 +123,24 @@ class Context(BaseContext["Cordex"]):
 
         return await self.send_file(file_content = content, file_name = "content.txt")
 
-    async def send_button(self, callback : _Callback, /) -> Message:
+    async def send_button(self, callback : _Callback, /, *, restricted : bool = True) -> Message:
         @final
         class _ViewButton(View):
-            def __init__(self, view_callback : _Callback, /) -> None:
+            def __init__(self) -> None:
                 super().__init__(timeout = None)
-                self.callback = view_callback
+                self.callback   = callback
+                self.restricted = restricted
 
             @button(label = "Click me!")
             async def btn_basic(self, interaction : Interaction, _button : Button[Self]) -> None:
+                if self.restricted and interaction.user not in interaction.client.developers:
+                    await interaction.response.send_message(
+                       f"{DENIED_EMOJI} **Go away.**\n"
+                        "You're not a bot owner!",
+                        ephemeral = True,
+                    )
+                    return
+
                 try:
                     await self.callback(interaction)
                 except Exception as e:
@@ -152,7 +161,7 @@ class Context(BaseContext["Cordex"]):
                             ephemeral = True,
                         )
 
-        return await self.send(view = _ViewButton(callback))
+        return await self.send(view = _ViewButton())
 
     async def send_embed(self, embed : Embed, /) -> Message:
         return await self.send(embed = embed)

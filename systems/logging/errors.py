@@ -198,8 +198,8 @@ class ErrorLogger(Cog):
 
         if exception is None:
             await self._send_error(
-                title  =  "Bot Event Error",
-                error  = f"{event}: Unknown exception",
+                title =  "Bot Event Error",
+                error = f"{event}: Unknown exception",
             )
             return
 
