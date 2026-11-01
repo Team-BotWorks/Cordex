@@ -87,12 +87,12 @@ class Config:
 
             for role_id in role_ids:
                 await self.bot.db.execute(
-                    t"INSERT INTO CommandRestrictions (guild_id, command_name, target_type, target_id) VALUES ({self.guild.id}, {command_name}, role, {role_id})",
+                    t"INSERT INTO CommandRestrictions (guild_id, command_name, target_type, target_id) VALUES ({self.guild.id}, {command_name}, 'role', {role_id})",
                 )
 
             for user_id in user_ids:
                 await self.bot.db.execute(
-                    t"INSERT INTO CommandRestrictions (guild_id, command_name, target_type, target_id) VALUES ({self.guild.id}, {command_name}, user, {user_id})",
+                    t"INSERT INTO CommandRestrictions (guild_id, command_name, target_type, target_id) VALUES ({self.guild.id}, {command_name}, 'user', {user_id})",
                 )
 
             await self.bot.db.commit()
