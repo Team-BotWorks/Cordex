@@ -24,9 +24,8 @@ class ServerCommands(
     name        = "server",
     description = "Server commands.",
 ):
-    def __init__(self, bot : Cordex) -> None:
+    def __init__(self) -> None:
         super().__init__()
-        self.bot = bot
 
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
     # /server commands Command
@@ -77,5 +76,5 @@ class ServerCommands(
 
 
 async def setup(bot : Cordex) -> None:
-    cog = ServerCommands(bot)
+    cog = ServerCommands()
     await bot.add_cog(cog)

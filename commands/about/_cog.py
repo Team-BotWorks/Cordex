@@ -15,9 +15,8 @@ from .about import run_about
 
 @final
 class AboutCommand(Cog):
-    def __init__(self, bot : Cordex) -> None:
+    def __init__(self) -> None:
         super().__init__()
-        self.bot = bot
 
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
     # /about Command
@@ -33,5 +32,5 @@ class AboutCommand(Cog):
 
 
 async def setup(bot : Cordex) -> None:
-    cog = AboutCommand(bot)
+    cog = AboutCommand()
     await bot.add_cog(cog)

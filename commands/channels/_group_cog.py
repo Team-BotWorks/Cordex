@@ -33,9 +33,8 @@ class ChannelCommands(
     name        = "channel",
     description = "Channel commands.",
 ):
-    def __init__(self, bot : Cordex) -> None:
+    def __init__(self) -> None:
         super().__init__()
-        self.bot = bot
 
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
     # /channel compare Command
@@ -109,5 +108,5 @@ class ChannelCommands(
 
 
 async def setup(bot : Cordex) -> None:
-    cog = ChannelCommands(bot)
+    cog = ChannelCommands()
     await bot.add_cog(cog)

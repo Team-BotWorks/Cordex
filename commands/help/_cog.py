@@ -15,9 +15,8 @@ from .help import run_help
 
 @final
 class HelpCommand(Cog):
-    def __init__(self, bot : Cordex) -> None:
+    def __init__(self) -> None:
         super().__init__()
-        self.bot = bot
 
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
     # /help Command
@@ -43,5 +42,5 @@ class HelpCommand(Cog):
 
 
 async def setup(bot : Cordex) -> None:
-    cog = HelpCommand(bot)
+    cog = HelpCommand()
     await bot.add_cog(cog)

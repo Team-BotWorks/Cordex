@@ -31,9 +31,8 @@ class MemberCommands(
     name        = "member",
     description = "Member commands.",
 ):
-    def __init__(self, bot : Cordex) -> None:
+    def __init__(self) -> None:
         super().__init__()
-        self.bot = bot
 
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
     # /member avatar Command
@@ -136,5 +135,5 @@ class MemberCommands(
 
 
 async def setup(bot : Cordex) -> None:
-    cog = MemberCommands(bot)
+    cog = MemberCommands()
     await bot.add_cog(cog)

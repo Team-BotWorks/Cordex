@@ -33,9 +33,8 @@ class RoleCommands(
     name        = "role",
     description = "Role commands.",
 ):
-    def __init__(self, bot : Cordex) -> None:
+    def __init__(self) -> None:
         super().__init__()
-        self.bot = bot
 
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
     # /role compare Command
@@ -144,5 +143,5 @@ class RoleCommands(
 
 
 async def setup(bot : Cordex) -> None:
-    cog = RoleCommands(bot)
+    cog = RoleCommands()
     await bot.add_cog(cog)

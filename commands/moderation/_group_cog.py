@@ -81,9 +81,8 @@ class ModerationCommands(
     name        = "moderation",
     description = "Moderation commands.",
 ):
-    def __init__(self, bot : Cordex) -> None:
+    def __init__(self) -> None:
         super().__init__()
-        self.bot = bot
 
     ban        : Group = Group(
         name        = "ban",
@@ -364,5 +363,5 @@ class ModerationCommands(
 
 
 async def setup(bot : Cordex) -> None:
-    cog = ModerationCommands(bot)
+    cog = ModerationCommands()
     await bot.add_cog(cog)
