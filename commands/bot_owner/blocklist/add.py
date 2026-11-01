@@ -22,9 +22,16 @@ async def run_botowner_blocklist_add(ctx : Context, target_id : int) -> None:
         await send_bad_argument(ctx, subtitle = "Target is already blocklisted.")
         return
 
-    if isinstance(target, User) and is_bot_owner(target):
-        await send_bad_argument(ctx, subtitle = "You cannnot blocklist bot owners.")
-        return
+    if isinstance(target, User):
+        if target.bot:
+            them = "me" if target == ctx.bot.user else "bots"
+            await send_bad_argument(ctx, subtitle = f"You cannnot blocklist {them}.")
+            return
+
+        if is_bot_owner(target):
+            them = "yourself" if target == ctx.author else "bot owners"
+            await send_bad_argument(ctx, subtitle = f"You cannnot blocklist {them}.")
+            return
 
     try:
         await manager.add(target)
