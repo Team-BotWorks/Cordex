@@ -11,7 +11,7 @@ from aiosqlite import Row
 from discord import Color, Guild, Intents, Message, Status, User
 from discord import Interaction as BaseInteraction
 from discord.app_commands import AppCommand as APICommand
-from discord.ext.commands import Bot, Cog, when_mentioned_or
+from discord.ext.commands import Bot, Cog, ExtensionAlreadyLoaded, ExtensionFailed, ExtensionNotFound, NoEntryPointError, when_mentioned_or
 from discord.ext.commands import Context as BaseContext
 from discord.http import Route
 
@@ -357,6 +357,14 @@ class Cordex(Bot):
             try:
                 await self.load_extension(cog)
                 log.info("Loaded cog %s", cog)
+            except ExtensionNotFound:
+                log.error("Failed to load cog %s; file was not found.", cog)
+            except ExtensionAlreadyLoaded:
+                log.warning("Failed to load cog %s; cog is already loaded.", cog)
+            except NoEntryPointError:
+                log.error("Failed to load cog %s; did you forget a setup function?", cog)
+            except ExtensionFailed as e:
+                log.error("Failed to load cog %s: %s", cog, e.original)
             except Exception:
                 log.exception("Failed to load cog %s", cog)
 
