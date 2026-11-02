@@ -159,15 +159,16 @@ class Actions:
             ),
             VisibleLargeSeparator[LayoutView](),
             TextDisplay[LayoutView](
-                f"{
+               f"{
                     format_table(
                         {
                             "Moderator" : f"{moderator.mention} | {moderator.id}",
                             "Reason"    : action.reason,
                         }
                     )
-                }\n\n"
-                f"{line}",
+                }\n"
+                "\n"
+               f"{line}",
             ),
         )
 
@@ -841,8 +842,6 @@ class Actions:
         channel = action.channel
         amount  = action.amount
 
-        # ⸻ Helper.
-
         async def _purge() -> list[Message]:
             if not target:
                 return await channel.purge(limit = amount, reason = reason)
@@ -852,8 +851,6 @@ class Actions:
                 check  = lambda m : m.author == target,
                 reason = reason,
             )
-
-        # ⸻ Logic.
 
         try:
             deleted = await _purge()

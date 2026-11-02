@@ -444,9 +444,8 @@ LEET_TABLE      = str.maketrans("013457@$", "oieastas")
 def _normalize_words(text : str) -> list[str]:
     decomposed = unicode_normalize("NFKD", text)
     cleaned    = "".join(
-        char
-        for char in decomposed
-        if not unicode_combining(char) and unicode_category(char) != "Cf"
+        character for character in decomposed
+        if not unicode_combining(character) and unicode_category(character) != "Cf"
     )
     words      = cast("list[str]", WORD_PATTERN.findall(cleaned.casefold().translate(LEET_TABLE)))
 

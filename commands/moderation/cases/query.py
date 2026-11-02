@@ -16,8 +16,8 @@ from core.responses import FormatOverride, MessageType, format_send
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
 
-class DateReversalError(ValueError):
-    """The exception raised when a date is parsed in DD/MM format instead of MM/DD."""
+class _DateReversalError(ValueError):
+    pass
 
 
 def _parse_date(date : str) -> datetime | None:
@@ -37,7 +37,7 @@ def _parse_date(date : str) -> datetime | None:
         except ValueError:
             continue
         else:
-            raise DateReversalError
+            raise _DateReversalError
 
     return None
 
@@ -89,7 +89,7 @@ async def run_moderation_cases_query(
     if before:
         try:
             before_datetime = _parse_date(before)
-        except DateReversalError:
+        except _DateReversalError:
             await send_bad_argument(
                 interaction,
                 subtitle = {"before" : "Invalid date passed. A date must be of the form `MM/DD`, not `DD/MM`."},
@@ -108,7 +108,7 @@ async def run_moderation_cases_query(
     if after:
         try:
             after_datetime = _parse_date(after)
-        except DateReversalError:
+        except _DateReversalError:
             await send_bad_argument(
                 interaction,
                 subtitle = {"after" : "Invalid date passed. A date must be of the form `MM/DD`, not `DD/MM`."},
@@ -132,9 +132,9 @@ async def run_moderation_cases_query(
         )
         return
 
-    cases_manager = CasesManager(interaction.client, guild)
+    manager = CasesManager(interaction.client, guild)
     try:
-        cases = await cases_manager.filter_by(
+        cases = await manager.filter_by(
             action_type  = parsed_action,
             moderator_id = moderator.id if moderator else None,
             target_id    = target.id    if target    else None,
@@ -161,7 +161,7 @@ async def run_moderation_cases_query(
         ]
 
     if not cases:
-        if not await cases_manager.get_all_cases():
+        if not await manager.get_all_cases():
             await format_send(
                 interaction,
                 MessageType.warning,
@@ -182,7 +182,7 @@ async def run_moderation_cases_query(
         def __init__(self) -> None:
             super().__init__(
                 "# Cases Found",
-                [build_case_section(case, cases_manager) for case in cases],
+                [build_case_section(case, manager) for case in cases],
                 footer    = Footer("Page {smallest_page} of {biggest_page} | {count} Case{s}"),
                 per_page  = 10,
                 color     = COLOR_GREY,

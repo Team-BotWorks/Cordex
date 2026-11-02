@@ -26,14 +26,14 @@ from core.utilities import format_table
 
 @final
 class _OpenCaseButton[V : LayoutView](Button[V]):
-    def __init__(self, cases_manager : CasesManager, case_id : int) -> None:
+    def __init__(self, manager : CasesManager, case_id : int) -> None:
         super().__init__(label = "View")
-        self.cases_manager = cases_manager
-        self.case_id       = case_id
+        self.manager = manager
+        self.case_id = case_id
 
     @override
     async def callback(self, interaction : Interaction) -> None:  # pyright: ignore[reportIncompatibleMethodOverride]
-        await send_case_view(interaction, self.cases_manager, self.case_id)
+        await send_case_view(interaction, self.manager, self.case_id)
 
 
 def _format_summary(case : Case) -> str:
@@ -63,11 +63,11 @@ def _format_summary(case : Case) -> str:
     return "\n".join(lines)
 
 
-def build_case_section[V : LayoutView](case : Case, cases_manager : CasesManager) -> ButtonSection[V]:
-    return ButtonSection(_format_summary(case), button = _OpenCaseButton(cases_manager, case.id))
+def build_case_section[V : LayoutView](case : Case, manager : CasesManager) -> ButtonSection[V]:
+    return ButtonSection(_format_summary(case), button = _OpenCaseButton(manager, case.id))
 
 
-async def build_case_view(bot : Cordex, case : Case, cases_manager : CasesManager) -> LayoutView:
+async def build_case_view(bot : Cordex, case : Case, manager : CasesManager) -> LayoutView:
     view      = LayoutView()
     container = Container[view](TextDisplay(f"# {case.action_type.readable()} | #{case.id}"), color = COLOR_GREY)
 
@@ -132,8 +132,9 @@ async def build_case_view(bot : Cordex, case : Case, cases_manager : CasesManage
         container.add_items(
             VisibleLargeSeparator(),
             ButtonSection(
-                f"## Related Case\n#{related_case_id}",
-                button = _OpenCaseButton(cases_manager, related_case_id),
+                f"## Related Case\n"
+                f"#{related_case_id}",
+                button = _OpenCaseButton(manager, related_case_id),
             ),
         )
 
@@ -151,17 +152,14 @@ async def build_case_view(bot : Cordex, case : Case, cases_manager : CasesManage
     return view
 
 
-async def send_case_view(interaction : Interaction, cases_manager : CasesManager, case_id : int) -> None:
-    case = await cases_manager.get_case(case_id)
+async def send_case_view(interaction : Interaction, manager : CasesManager, case_id : int) -> None:
+    case = await manager.get_case(case_id)
     if not case:
-        await send_bad_argument(
-            interaction,
-            subtitle = {"case-id" : "Case not found."},
-        )
+        await send_bad_argument(interaction, subtitle = {"case-id" : "Case not found."})
         return
 
     await interaction.response.send_message(
-        view             = await build_case_view(interaction.client, case, cases_manager),
+        view             = await build_case_view(interaction.client, case, manager),
         ephemeral        = True,
         allowed_mentions = AllowedMentions.none(),
     )

@@ -117,7 +117,8 @@ class _ConfigModal(Modal):
 
         self.current_allowed = TextDisplay[Self](
            f"**Currently allowed:**\n"
-           f"{mentions}\n\n"
+           f"{mentions}\n"
+            "\n"
             "Please note that the guild owner may *always* run commands.",
         )
 
@@ -178,7 +179,7 @@ class _ConfigModal(Modal):
         name = format_command(self._command.qualified_name)
 
         if allowed:
-            mentions = "\n".join(target.mention for target in allowed)
+            mentions = "\n".join(f"- {target.mention}" for target in allowed)
 
             title    = f"set restrictions for {name}"
             subtitle = (
@@ -316,7 +317,7 @@ class _GroupConfigModal(Modal):
         elif len(affected) == len(self._commands):
             subtitle = "Every command in this group was affected."
         else:
-            mentions = "\n".join(format_command(command.qualified_name) for command in affected)
+            mentions = "\n".join(f"- {format_command(command.qualified_name)}" for command in affected)
             subtitle = (
                 "Affected commands:\n"
                f"{mentions}"
@@ -374,7 +375,7 @@ class _CategorySelect(Select[UnnamedPaginator]):
 
             # ⸻ Get the description and children.
 
-            children = ", ".join(f"/{command.qualified_name.replace(name, "").strip()}" for command in cog.walk_app_commands())
+            children =  ", ".join(f"/{command.qualified_name.replace(name, "").strip()}" for command in cog.walk_app_commands())
             subtitle = f"{description} Children: {children}"
 
             if len(subtitle) > 100:

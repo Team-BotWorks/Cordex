@@ -27,13 +27,13 @@ async def run_moderation_cases_view(interaction : Interaction, case_id : int | N
     if not guild:
         return
 
-    cases_manager = CasesManager(interaction.client, guild)
+    manager = CasesManager(interaction.client, guild)
 
     if case_id is not None:
-        await send_case_view(interaction, cases_manager, case_id)
+        await send_case_view(interaction, manager, case_id)
         return
 
-    cases = await cases_manager.get_all_cases()
+    cases = await manager.get_all_cases()
     if not cases:
         await format_send(
             interaction,
@@ -47,7 +47,7 @@ async def run_moderation_cases_view(interaction : Interaction, case_id : int | N
         def __init__(self) -> None:
             super().__init__(
                 "# Server Cases",
-                [build_case_section(case, cases_manager) for case in cases],
+                [build_case_section(case, manager) for case in cases],
                 footer    = Footer("Page {smallest_page} of {biggest_page} | {count} Case{s}"),
                 per_page  = 10,
                 color     = COLOR_GREY,
