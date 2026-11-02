@@ -398,10 +398,7 @@ class _CategorySelect(Select[UnnamedPaginator]):
                 ),
             )
 
-        super().__init__(
-            placeholder = "Select a command category.",
-            options     = options,
-        )
+        super().__init__(placeholder = "Select a command category.", options = options)
 
     @override
     async def callback(self, interaction : Interaction) -> None:

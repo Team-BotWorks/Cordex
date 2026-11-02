@@ -57,7 +57,7 @@ class _FontSelect(Select["_PersonalizationView"]):
         if not self.view:
             return
 
-        await self.view.apply(interaction, font = DisplayNameFont[self.values[0]])
+        await self.view.apply(interaction, font = DisplayNameFont(int(self.values[0])))
 
 
 @final
@@ -79,7 +79,7 @@ class _EffectSelect(Select["_PersonalizationView"]):
         if not self.view:
             return
 
-        await self.view.apply(interaction, effect = DisplayNameEffect[self.values[0]])
+        await self.view.apply(interaction, effect = DisplayNameEffect(int(self.values[0])))
 
 
 @final
@@ -405,10 +405,10 @@ class _PersonalizationView(NamedPaginator):
         colors = "-".join(f"`{color.value:06X}`" for color in self.style.colors) or "None"
 
         for option in self.font_select.options:
-            option.default = option.value == self.style.font.name
+            option.default = option.value == str(self.style.font.value)
 
         for option in self.effect_select.options:
-            option.default = option.value == self.style.effect.name
+            option.default = option.value == str(self.style.effect.value)
 
         s = "s" if len(self.style.colors) > 1 else ""
         txt_colors = (
