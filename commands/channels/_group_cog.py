@@ -33,9 +33,6 @@ class ChannelCommands(
     name        = "channel",
     description = "Channel commands.",
 ):
-    def __init__(self) -> None:
-        super().__init__()
-
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
     # /channel compare Command
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻

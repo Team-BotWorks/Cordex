@@ -81,26 +81,23 @@ class ModerationCommands(
     name        = "moderation",
     description = "Moderation commands.",
 ):
-    def __init__(self) -> None:
-        super().__init__()
-
-    ban        : Group = Group(
+    ban        = Group(
         name        = "ban",
         description = "Moderation ban commands",
     )
-    lockdown   : Group = Group(
+    lockdown   = Group(
         name        = "lockdown",
         description = "Moderation lockdown commands",
     )
-    quarantine : Group = Group(
+    quarantine = Group(
         name        = "quarantine",
         description = "Moderation quarantine commands",
     )
-    timeout    : Group = Group(
+    timeout    = Group(
         name        = "timeout",
         description = "Moderation timeout commands",
     )
-    cases      : Group = Group(
+    cases      = Group(
         name        = "cases",
         description = "Moderation case commands",
     )

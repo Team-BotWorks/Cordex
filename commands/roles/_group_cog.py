@@ -33,9 +33,6 @@ class RoleCommands(
     name        = "role",
     description = "Role commands.",
 ):
-    def __init__(self) -> None:
-        super().__init__()
-
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
     # /role compare Command
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻

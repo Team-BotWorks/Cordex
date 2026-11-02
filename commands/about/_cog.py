@@ -15,13 +15,6 @@ from .about import run_about
 
 @final
 class AboutCommand(Cog):
-    def __init__(self) -> None:
-        super().__init__()
-
-    # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
-    # /about Command
-    # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
-
     @unrestrictable
     @command(
         name        = "about",

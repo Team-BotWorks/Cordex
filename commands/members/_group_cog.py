@@ -31,9 +31,6 @@ class MemberCommands(
     name        = "member",
     description = "Member commands.",
 ):
-    def __init__(self) -> None:
-        super().__init__()
-
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
     # /member avatar Command
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
