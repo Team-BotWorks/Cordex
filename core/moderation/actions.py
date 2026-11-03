@@ -72,6 +72,17 @@ class _ActionResult[T = None]:
     dmed    : bool | None
     data    : T    | None = None
 
+
+type DMActions = (
+    BanAddPayload
+    | BanRemovePayload
+    | KickPayload
+    | QuarantineAddPayload
+    | QuarantineRemovePayload
+    | TimeoutAddPayload
+    | TimeoutRemovePayload
+)
+
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 # Moderation Actions
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
@@ -115,41 +126,35 @@ class Actions:
     # _dm_target
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
-    async def _dm_target(
-        self,
-        action_type : ActionType,
-        action      : (
-            BanAddPayload
-            | BanRemovePayload
-            | KickPayload
-            | QuarantineAddPayload
-            | QuarantineRemovePayload
-            | TimeoutAddPayload
-            | TimeoutRemovePayload
-        ),
-    ) -> bool:
+    async def _dm_target(self, action : DMActions, /) -> bool:
         moderator = action.moderator
         target    = action.target
 
         guild_name = f"'{self.guild.name}'"
 
-        type_map : dict[ActionType, str] = {
-            ActionType.ban_add           : f"# {WARNING_EMOJI} You have been banned in the server {guild_name}.",
-            ActionType.ban_remove        : f"# {WARNING_EMOJI} You have been un-banned from the server {guild_name}.",
-            ActionType.kick              : f"# {WARNING_EMOJI} You have been kicked from the server {guild_name}.",
-            ActionType.quarantine_add    : f"# {WARNING_EMOJI} You have been placed in quarantine in the server {guild_name}.",
-            ActionType.quarantine_remove : f"# {WARNING_EMOJI} You have been removed from quarantine in the server {guild_name}.",
-            ActionType.timeout_add       : f"# {WARNING_EMOJI} You have been placed in timeout in the server {guild_name}.",
-            ActionType.timeout_remove    : f"# {WARNING_EMOJI} You have been removed from timeout in the server {guild_name}.",
+        type_map : dict[type[DMActions], str] = {
+            BanAddPayload           : f"# {WARNING_EMOJI} You have been banned in the server {guild_name}.",
+            BanRemovePayload        : f"# {WARNING_EMOJI} You have been un-banned from the server {guild_name}.",
+            KickPayload             : f"# {WARNING_EMOJI} You have been kicked from the server {guild_name}.",
+            QuarantineAddPayload    : f"# {WARNING_EMOJI} You have been placed in quarantine in the server {guild_name}.",
+            QuarantineRemovePayload : f"# {WARNING_EMOJI} You have been removed from quarantine in the server {guild_name}.",
+            TimeoutAddPayload       : f"# {WARNING_EMOJI} You have been placed in timeout in the server {guild_name}.",
+            TimeoutRemovePayload    : f"# {WARNING_EMOJI} You have been removed from timeout in the server {guild_name}.",
         }
 
-        title  = type_map[action_type]
-        length = getattr(action, "length", None)
+        title  = type_map[type(action)]
 
-        line = ""
-        if isinstance(length, int):
-            end_time = utcnow() + timedelta(seconds = length)
-            line = f"-# This action will be undone {format_dt(end_time, style = "F")} | {format_dt(end_time, style = "R")}."
+        undone_at = ""
+        if isinstance(action, TimeoutAddPayload):
+            end_time = utcnow() + timedelta(seconds = action.length)
+            undone_at = f"-# This action will be undone {format_dt(end_time, style = "F")} | {format_dt(end_time, style = "R")}."
+
+        moderation_table = format_table(
+            {
+                "Moderator" : f"{moderator.mention} | {moderator.id}",
+                "Reason"    : action.reason,
+            },
+        )
 
         view = LayoutView()
         view.add_items(
@@ -159,16 +164,9 @@ class Actions:
             ),
             VisibleLargeSeparator[LayoutView](),
             TextDisplay[LayoutView](
-               f"{
-                    format_table(
-                        {
-                            "Moderator" : f"{moderator.mention} | {moderator.id}",
-                            "Reason"    : action.reason,
-                        }
-                    )
-                }\n"
+               f"{moderation_table}\n"
                 "\n"
-               f"{line}",
+               f"{undone_at}",
             ),
         )
 
@@ -346,10 +344,7 @@ class Actions:
         `ActionResult`
             The result of the ban addition.
         """
-        if action.dm_user:
-            success = await self._dm_target(ActionType.ban_add, action)
-        else:
-            success = None
+        success = await self._dm_target(action) if action.dm_user else None
 
         try:
             await action.target.ban(
@@ -445,10 +440,7 @@ class Actions:
         `ActionResult`
             The result of the ban removal.
         """
-        if action.dm_user:
-            success = await self._dm_target(ActionType.ban_remove, action)
-        else:
-            success = None
+        success = await self._dm_target(action) if action.dm_user else None
 
         try:
             await self.guild.unban(
@@ -490,10 +482,7 @@ class Actions:
         `ActionResult`
             The result of the kick.
         """
-        if action.dm_user:
-            success = await self._dm_target(ActionType.kick, action)
-        else:
-            success = None
+        success = await self._dm_target(action) if action.dm_user else None
 
         try:
             await self.guild.kick(
@@ -543,10 +532,7 @@ class Actions:
                 dmed   = False,
             )
 
-        if action.dm_user:
-            success = await self._dm_target(ActionType.quarantine_add, action)
-        else:
-            success = None
+        success = await self._dm_target(action) if action.dm_user else None
 
         try:
             await self.quarantine.add(action.target)
@@ -574,7 +560,7 @@ class Actions:
     # quarantine_view
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
-    async def quarantine_view(self) -> UnnamedPaginator | None:
+    async def quarantine_view(self) -> UnnamedPaginator | None:  # TODO(FinestPerfectionism): Consider quarantined members that have left the guild.
         """
         Display a paginator (`UnnamedPaginator`) of all members in quarantine.
 
@@ -637,10 +623,7 @@ class Actions:
                 dmed   = False,
             )
 
-        if action.dm_user:
-            success = await self._dm_target(ActionType.quarantine_remove, action)
-        else:
-            success = None
+        success = await self._dm_target(action) if action.dm_user else None
 
         roles = await self.quarantine.remove(action.target)
 
@@ -690,10 +673,7 @@ class Actions:
         `ActionResult`
             The result of the timeout addition.
         """
-        if action.dm_user:
-            success = await self._dm_target(ActionType.timeout_add, action)
-        else:
-            success = None
+        success = await self._dm_target(action) if action.dm_user else None
 
         try:
             await action.target.edit(
@@ -792,10 +772,7 @@ class Actions:
         `ActionResult`
             The result of the timeout removal.
         """
-        if action.dm_user:
-            success = await self._dm_target(ActionType.timeout_remove, action)
-        else:
-            success = None
+        success = await self._dm_target(action) if action.dm_user else None
 
         try:
             await action.target.edit(
@@ -854,7 +831,10 @@ class Actions:
 
         try:
             deleted = await _purge()
-        except Forbidden, HTTPException:
+        except Forbidden:
+            failed  = True
+            deleted = []
+        except HTTPException:
             failed  = True
             deleted = []
             self._log_failure("purge")
