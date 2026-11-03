@@ -129,7 +129,7 @@ class ModerationCommands(
 
     @lockdown.command(
         name        = "view",
-        description = "View all lockdowned channels.",
+        description = "View all channels in lockdown.",
     )
     async def cmd_moderation_lockdown_view(self, interaction : Interaction) -> None:
         await run_moderation_lockdown_view(interaction)

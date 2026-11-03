@@ -1,3 +1,4 @@
+# ruff: file-ignore[error-instead-of-exception]
 # pyright: reportImportCycles = false
 
 from asyncio import to_thread
@@ -11,7 +12,15 @@ from aiosqlite import Row
 from discord import Color, Guild, Intents, Message, Status, User
 from discord import Interaction as BaseInteraction
 from discord.app_commands import AppCommand as APICommand
-from discord.ext.commands import Bot, Cog, ExtensionAlreadyLoaded, ExtensionFailed, ExtensionNotFound, NoEntryPointError, when_mentioned_or
+from discord.ext.commands import (
+    Bot,
+    Cog,
+    ExtensionAlreadyLoaded,
+    ExtensionFailed,
+    ExtensionNotFound,
+    NoEntryPointError,
+    when_mentioned_or,
+)
 from discord.ext.commands import Context as BaseContext
 from discord.http import Route
 
@@ -358,13 +367,13 @@ class Cordex(Bot):
                 await self.load_extension(cog)
                 log.info("Loaded cog %s", cog)
             except ExtensionNotFound:
-                log.error("Failed to load cog %s; file was not found.", cog)
+                log.error("Failed to load cog %s; file was not found.", cog, exc_info = False)
             except ExtensionAlreadyLoaded:
-                log.warning("Failed to load cog %s; cog is already loaded.", cog)
+                log.warning("Failed to load cog %s; cog is already loaded.", cog, exc_info = False)
             except NoEntryPointError:
-                log.error("Failed to load cog %s; did you forget a setup function?", cog)
+                log.error("Failed to load cog %s; did you forget a setup function?", cog, exc_info = False)
             except ExtensionFailed as e:
-                log.error("Failed to load cog %s: %s", cog, e.original)
+                log.error("Failed to load cog %s: %s", cog, e.original, exc_info = False)
             except Exception:
                 log.exception("Failed to load cog %s", cog)
 

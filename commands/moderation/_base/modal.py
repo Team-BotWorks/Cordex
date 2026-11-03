@@ -712,33 +712,33 @@ async def send_moderation_modal(
             )
             return
 
-        quarantined_members = await QuarantineManager(client, guild).get_members()
+        manager = QuarantineManager(client, guild)
 
-        if action_type == ActionType.quarantine_remove and check_target not in quarantined_members:
+        if action_type == ActionType.quarantine_remove and not await manager.is_quarantined(check_target):
             await send_bad_argument(
                 interaction,
                 subtitle = {"target" : f"{check_target.mention} is not quarantined."},
             )
             return
 
-        if action_type == ActionType.quarantine_add and check_target in quarantined_members:
+        if action_type == ActionType.quarantine_add and await manager.is_quarantined(check_target):
             await send_bad_argument(
                 interaction,
                 subtitle = {"target" : f"{check_target.mention} is already quarantined."},
             )
             return
 
-    if action_type in {ActionType.lockdown_add, ActionType.lockdown_remove} and isinstance(target, GuildMessageable):
-        lockdowned_channels = await LockdownManager(client, guild).get_channels()
+    if action_type in {ActionType.lockdown_add, ActionType.lockdown_remove} and isinstance(target, GuildMessageableChannel):
+        manager = LockdownManager(client, guild)
 
-        if action_type == ActionType.lockdown_add and target in lockdowned_channels:
+        if action_type == ActionType.lockdown_add and await manager.is_locked_down(target):
             await send_bad_argument(
                 interaction,
                 subtitle = {"target" : f"{target.mention} is already in lockdown."},
             )
             return
 
-        if action_type == ActionType.lockdown_remove and target not in lockdowned_channels:
+        if action_type == ActionType.lockdown_remove and not await manager.is_locked_down(target):
             await send_bad_argument(
                 interaction,
                 subtitle = {"target" : f"{target.mention} is not in lockdown."},

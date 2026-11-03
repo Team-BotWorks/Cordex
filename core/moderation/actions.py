@@ -202,7 +202,7 @@ class Actions:
         everyone  = self.guild.default_role
         overwrite = channel.overwrites_for(everyone)
 
-        await self.lockdown.add_channel(channel)
+        await self.lockdown.add(channel)
 
         try:
             overwrite.send_messages = False
@@ -213,11 +213,11 @@ class Actions:
             )
         except Forbidden:
             failed = True
-            await self.lockdown.remove_channel(channel)
+            await self.lockdown.remove(channel)
         except HTTPException:
             failed = True
             self._log_failure("lockdown add")
-            await self.lockdown.remove_channel(channel)
+            await self.lockdown.remove(channel)
         else:
             failed = False
 
@@ -240,9 +240,9 @@ class Actions:
         Returns
         -------
         `LockdownPaginator | None`
-            The paginator displaying all lockdowned channels, or `None` if no channels are in lockdown.
+            The paginator displaying all channels in lockdown, or `None` if no channels are in lockdown.
         """
-        channels = await self.lockdown.get_channels()
+        channels = await self.lockdown.get()
         if not channels:
             return None
 
@@ -317,7 +317,7 @@ class Actions:
             self._log_failure("lockdown removal")
         else:
             failed = False
-            await self.lockdown.remove_channel(channel)
+            await self.lockdown.remove(channel)
 
         case = await self.cases.create_case(action)
 
@@ -356,8 +356,8 @@ class Actions:
                 reason                 = f"Banned by {action.moderator.name}: {action.reason}",
                 delete_message_seconds = action.seconds_to_delete,
             )
-            if action.target in await self.quarantine.get_members():
-                await self.quarantine.remove_member(action.target)  # TODO(FinestPerfectiomism): Expire the related quarantine case.
+            if action.target in await self.quarantine.get():
+                await self.quarantine.remove(action.target)  # TODO(FinestPerfectiomism): Expire the related quarantine case.
         except Forbidden:
             failed = True
         except HTTPException:
@@ -549,7 +549,7 @@ class Actions:
             success = None
 
         try:
-            await self.quarantine.add_member(action.target)
+            await self.quarantine.add(action.target)
             await action.target.edit(
                 roles  = [quarantine_role],
                 reason = f"Quarantined by {action.moderator.name}: {action.reason}",
@@ -642,7 +642,7 @@ class Actions:
         else:
             success = None
 
-        roles = await self.quarantine.remove_member(action.target)
+        roles = await self.quarantine.remove(action.target)
 
         try:
             if roles is not None:

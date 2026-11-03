@@ -1,9 +1,9 @@
 from typing import Literal, cast, final, overload
 
 from discord import Color, Forbidden, Guild, HTTPException, Member, Permissions, Role
-from discord.abc import GuildChannel
 
 from bot import Cordex, log
+from bot.types import GuildMessageableChannel
 from core.responses import FormatOverride, MessageType, format_send
 
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
@@ -46,16 +46,16 @@ class LockdownManager:
         log.exception("Failure during %s in guild %s, %s%s", msg, self.guild.name, self.guild.id, rate_limited_msg)
 
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
-    # get_channels
+    # get
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
     @overload
-    async def get_channels(self, *, by_id : Literal[True]) -> set[int]: ...
+    async def get(self, *, by_id : Literal[True]) -> set[int]: ...
 
     @overload
-    async def get_channels(self, *, by_id : Literal[False] = False) -> set[GuildChannel]: ...
+    async def get(self, *, by_id : Literal[False] = False) -> set[GuildMessageableChannel]: ...
 
-    async def get_channels(self, *, by_id : bool = False) -> set[GuildChannel] | set[int]:
+    async def get(self, *, by_id : bool = False) -> set[GuildMessageableChannel] | set[int]:
         """
         Fetch every channel in lockdown found in the database.
 
@@ -67,7 +67,7 @@ class LockdownManager:
 
         Returns
         -------
-        `by_id = False -> set[GuildChannel]`
+        `by_id = False -> set[GuildMessageableChannel]`
             Every channel in lockdown found in the database.
         `by_id = True -> set[int]`
             The ID of every channel in lockdown found in the database.
@@ -83,20 +83,21 @@ class LockdownManager:
 
         return {
             channel for channel_id in channel_ids
-            if (channel := self.guild.get_channel(channel_id))
+            if (channel := self.guild.get_channel(channel_id)) and
+            isinstance(channel, GuildMessageableChannel)
         }
 
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
-    # add_channel
+    # add
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
-    async def add_channel(self, channel : GuildChannel, /) -> None:
+    async def add(self, channel : GuildMessageableChannel, /) -> None:
         """
         Mark a channel as locked down in the database.
 
         Parameters
         ----------
-        channel : `GuildChannel`
+        channel : `GuildMessageableChannel`
             The channel to mark as locked down.
         /
         """
@@ -107,16 +108,16 @@ class LockdownManager:
         await self.bot.db.commit()
 
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
-    # remove_channel
+    # remove
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
-    async def remove_channel(self, channel : GuildChannel, /) -> None:
+    async def remove(self, channel : GuildMessageableChannel, /) -> None:
         """
         Unmark a channel as locked down in the database.
 
         Parameters
         ----------
-        channel : `GuildChannel`
+        channel : `GuildMessageableChannel`
             The channel to unmark as locked down.
         /
         """
@@ -126,15 +127,36 @@ class LockdownManager:
         await self.bot.db.commit()
 
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
-    # remove_all_channels
+    # remove_all
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
-    async def remove_all_channels(self) -> None:
+    async def remove_all(self) -> None:
         """Unmark all of this guild's channels as locked down in the database."""
         await self.bot.db.execute(
             t"DELETE FROM Lockdowns WHERE guild_id = {self.guild.id}",
         )
         await self.bot.db.commit()
+
+    # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
+    # is_locked_down
+    # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
+
+    async def is_locked_down(self, channel : GuildMessageableChannel, /) -> bool:
+        """
+        Check whether a channel is currently locked down.
+
+        Parameters
+        ----------
+        channel : `GuildMessageableChannel`
+            The channel to check.
+        /
+
+        Returns
+        -------
+        `bool`
+            Whether the channel is locked down or not.
+        """
+        return any(channel.id == channel_id for channel_id in await self.get(by_id = True))
 
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
     # enforce
@@ -153,7 +175,7 @@ class LockdownManager:
         if not me or not me.guild_permissions.manage_channels:
             return
 
-        locked_channels = await self.get_channels()
+        locked_channels = await self.get()
         if not locked_channels:
             return
 
@@ -215,35 +237,51 @@ class QuarantineManager:
         log.exception("Failure during %s in guild %s, %s%s", msg, self.guild.name, self.guild.id, rate_limited_msg)
 
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
-    # get_members
+    # get
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
-    async def get_members(self) -> set[Member]:
+    @overload
+    async def get(self, *, by_id : Literal[True]) -> set[int]: ...
+
+    @overload
+    async def get(self, *, by_id : Literal[False] = False) -> set[Member]: ...
+
+    async def get(self, *, by_id : bool = False) -> set[Member] | set[int]:
         """
         Fetch every quarantined member found in the database.
 
+        Parameters
+        ----------
+        *
+        by_id : `bool = False`
+            Whether to return the IDs of the members over actual member objects or not. This is useful in cases where a member may have left the guild or when testing for membership.
+
         Returns
         -------
-        `set[Member]`
+        `by_id = False -> set[Member]`
             Every quarantined member found in the database.
+        `by_id = True -> set[int]`
+            The ID of every quarantined member found in the database.
         """
         async with self.bot.db.execute(
             t"SELECT member_id FROM Quarantines WHERE guild_id = {self.guild.id}",
         ) as cursor:
             rows = await cursor.fetchall()
-            if not rows:
-                return set()
+
+        member_ids = {cast("int", row[0]) for row in rows}
+        if by_id:
+            return member_ids
 
         return {
-            member for row in rows
-            if (member := self.guild.get_member(cast("int", row[0])))
+            member for member_id in member_ids
+            if (member := self.guild.get_member(member_id))
         }
 
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
-    # add_member
+    # add
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
-    async def add_member(self, member : Member, /) -> None:
+    async def add(self, member : Member, /) -> None:
         """
         Mark a member as quarantined in the database, saving their current roles.
 
@@ -263,10 +301,10 @@ class QuarantineManager:
         await self.bot.db.commit()
 
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
-    # remove_member
+    # remove
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
-    async def remove_member(self, member : Member, /) -> list[Role] | None:
+    async def remove(self, member : Member, /) -> list[Role] | None:
         """
         Unmark a member as quarantined in the database.
 
@@ -302,15 +340,36 @@ class QuarantineManager:
         ]
 
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
-    # remove_all_members
+    # remove_all
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
-    async def remove_all_members(self) -> None:
+    async def remove_all(self) -> None:
         """Unmark all of this guild's members as quarantined in the database."""
         await self.bot.db.execute(
             t"DELETE FROM Quarantines WHERE guild_id = {self.guild.id}",
         )
         await self.bot.db.commit()
+
+    # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
+    # is_quarantined
+    # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
+
+    async def is_quarantined(self, member : Member, /) -> bool:
+        """
+        Check whether a member is currently quarantined.
+
+        Parameters
+        ----------
+        member : `Member`
+            The member to check.
+        /
+
+        Returns
+        -------
+        `bool`
+            Whether the member is quarantined or not.
+        """
+        return any(member.id == member_id for member_id in await self.get(by_id = True))
 
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
     # enforce
@@ -344,7 +403,7 @@ class QuarantineManager:
         deleted = False
         quarantine_role = await config.get_moderation_quarantine_role()
         if not quarantine_role:
-            if not await self.get_members():
+            if not await self.get():
                 return
 
             try:
@@ -444,7 +503,7 @@ class QuarantineManager:
             if not me or not me.guild_permissions.manage_roles:
                 return
 
-            true_quarantined = await self.get_members()
+            true_quarantined = await self.get()
             role_quarantined = set(quarantine_role.members)
 
             for member in true_quarantined:

@@ -61,7 +61,7 @@ class LockdownEnforcer(Cog):
 
     @Cog.listener("on_guild_remove")
     async def _listener_lockdownenforce_guildleave(self, guild : Guild) -> None:
-        await LockdownManager(self.bot, guild).remove_all_channels()
+        await LockdownManager(self.bot, guild).remove_all()
 
     @Cog.listener("on_guild_channel_update")
     async def _listener_lockdownenforce_channelupdate(self, before : GuildChannel, after : GuildChannel) -> None:
@@ -73,7 +73,7 @@ class LockdownEnforcer(Cog):
             return
 
         manager = LockdownManager(self.bot, after.guild)
-        if after.id in await manager.get_channels(by_id = True):
+        if after.id in await manager.get(by_id = True):
             with suppress(HTTPException):
                 await manager.enforce()
 
@@ -84,7 +84,7 @@ class LockdownEnforcer(Cog):
         if not isinstance(channel, GuildMessageableChannel):
             return
 
-        if channel.id in await LockdownManager(self.bot, guild).get_channels(by_id = True):
+        if await LockdownManager(self.bot, guild).is_locked_down(channel):
             await self.bot.db.execute(
                 t"DELETE FROM Lockdowns WHERE channel_id = {channel.id} AND guild_id = {guild.id}",
             )

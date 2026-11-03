@@ -11,7 +11,7 @@ from core.responses import FormatOverride, MessageType, format_send
 
 async def run_moderation_lockdown_view(interaction : Interaction) -> None:
     """
-    View all lockdowned channels.
+    View all channels in lockdown.
 
     Parameters
     ----------

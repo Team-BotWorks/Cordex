@@ -66,7 +66,7 @@ class QuarantineEnforcer(Cog):
 
     @Cog.listener("on_guild_remove")
     async def _listener_quarantineenforce_guildleave(self, guild : Guild) -> None:
-        await QuarantineManager(self.bot, guild).remove_all_members()
+        await QuarantineManager(self.bot, guild).remove_all()
 
     @Cog.listener("on_guild_channel_update")
     async def _listener_quarantineenforce_channelupdate(self, before : GuildChannel, after : GuildChannel) -> None:
@@ -137,7 +137,7 @@ class QuarantineEnforcer(Cog):
     @Cog.listener("on_member_join")
     async def _listener_quarantineenforce_memberjoin(self, member : Member) -> None:
         manager = QuarantineManager(self.bot, member.guild)
-        quarantined_members = await manager.get_members()
+        quarantined_members = await manager.get()
 
         if not quarantined_members:
             return
