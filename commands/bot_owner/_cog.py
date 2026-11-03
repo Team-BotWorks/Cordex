@@ -71,7 +71,7 @@ class BotOwnerCommands(Cog):
         if not is_bot_owner(user):
             return
 
-        if str(reaction.emoji) == "🗑️" and message.author == self.bot.user:
+        if str(reaction.emoji) == "🗑️":
             with suppress(Exception):
                 await message.delete()
 
