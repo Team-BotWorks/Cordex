@@ -15,7 +15,7 @@ from core.moderation import CasesManager
 
 @final
 class ConfigEnforcer(Cog):
-    """Resets configurations when the bot leaves a guild or when the databse guilds don't match the current ones (possibly due to the bot leaving while offline)."""
+    """Resets configurations when the bot leaves a guild or when the database guilds don't match the current ones (possibly due to the bot leaving while offline)."""
 
     def __init__(self, bot : Cordex) -> None:
         super().__init__()

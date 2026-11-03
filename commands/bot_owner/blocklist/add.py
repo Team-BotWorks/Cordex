@@ -25,17 +25,17 @@ async def run_botowner_blocklist_add(ctx : Context, target_id : int) -> None:
     if isinstance(target, User):
         if target.bot:
             them = "me" if target == ctx.bot.user else "bots"
-            await send_bad_argument(ctx, subtitle = f"You cannnot blocklist {them}.")
+            await send_bad_argument(ctx, subtitle = f"You cannot blocklist {them}.")
             return
 
         if is_bot_owner(target):
             them = "yourself" if target == ctx.author else "bot owners"
-            await send_bad_argument(ctx, subtitle = f"You cannnot blocklist {them}.")
+            await send_bad_argument(ctx, subtitle = f"You cannot blocklist {them}.")
             return
 
     try:
         await manager.add(target)
     except Exception:
-        log.exception("An exception occured during the blocklist addition")
+        log.exception("An exception occurred during the blocklist addition")
     else:
         await ctx.format_send(MessageType.success, title = f"blocklisted {target_id}")

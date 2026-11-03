@@ -22,6 +22,6 @@ async def run_botowner_blocklist_remove(ctx : Context, target_id : int) -> None:
     try:
         await manager.remove(target)
     except Exception:
-        log.exception("An exception occured during the blocklist removal")
+        log.exception("An exception occurred during the blocklist removal")
     else:
         await ctx.format_send(MessageType.success, title = f"unblocklisted {target_id}")

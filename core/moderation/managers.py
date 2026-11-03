@@ -317,7 +317,7 @@ class QuarantineManager:
         Returns
         -------
         `list[Role] | None`
-            The roles the member had before being quarantined, or `None` if the member was not marked to begin wtih.
+            The roles the member had before being quarantined, or `None` if the member was not marked to begin with.
         """
         async with self.bot.db.execute(
             t"SELECT old_roles FROM Quarantines WHERE member_id = {member.id} AND guild_id = {member.guild.id}",
