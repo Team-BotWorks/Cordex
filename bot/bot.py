@@ -132,7 +132,7 @@ class Cordex(Bot):
     # Biography
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
-    async def get_bio(self, guild : Guild, /) -> str:
+    async def get_biography(self, guild : Guild, /) -> str:
         """
         Get the bot's biography for this guild.
 
@@ -365,7 +365,7 @@ class Cordex(Bot):
         for cog in cogs:
             try:
                 await self.load_extension(cog)
-                log.info("Loaded cog %s", cog)
+                log.info("Loaded cog '%s'", cog)
             except ExtensionNotFound:
                 log.error("Failed to load cog %s; file was not found.", cog, exc_info = False)
             except ExtensionAlreadyLoaded:

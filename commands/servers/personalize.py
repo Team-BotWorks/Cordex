@@ -83,7 +83,7 @@ class _EffectSelect(Select["_PersonalizationView"]):
 
 
 @final
-class _ColorsModal(Modal, title = "Edit Color(s)"):
+class _ColorsModal(Modal, title = "Editing Effect Colors"):
     def __init__(self, view : _PersonalizationView) -> None:
         super().__init__()
         self.view = view
@@ -102,7 +102,7 @@ class _ColorsModal(Modal, title = "Edit Color(s)"):
             component   = self._colors,
         )
 
-        self.add_items(self.colors)
+        self.add_item(self.colors)
 
     @override
     async def on_submit(self, interaction : Interaction) -> None:
@@ -137,7 +137,7 @@ class _ColorsModal(Modal, title = "Edit Color(s)"):
 @final
 class _ColorsButton(Button["_PersonalizationView"]):
     def __init__(self) -> None:
-        super().__init__(label = "Edit Colors")
+        super().__init__(label = "Edit Effect Colors")
 
     @override
     async def callback(self, interaction : Interaction) -> None:
@@ -150,7 +150,7 @@ class _ColorsButton(Button["_PersonalizationView"]):
 @final
 class _ImageModal(Modal):
     def __init__(self, view : _PersonalizationView, target : _ImageTypes) -> None:
-        super().__init__(title = f"Edit {target.title()}")
+        super().__init__(title = f"Editing {target.title()}")
         self.view   = view
         self.target = target
 
@@ -187,15 +187,7 @@ class _ImageModal(Modal):
             await send_bad_argument(
                 interaction,
                 title    = f"set {self.target}",
-                subtitle = f"Upload an image or choose to reset the {self.target}.",
-            )
-            return
-
-        if not reset and attachment is not None and not (attachment.content_type or "").startswith("image/"):
-            await send_bad_argument(
-                interaction,
-                title    = f"set {self.target}",
-                subtitle =  "The file must be an image.",
+                subtitle =  "One option must be selected.",
             )
             return
 
@@ -237,7 +229,7 @@ class _ImageButton(Button["_PersonalizationView"]):
 
 
 @final
-class _BioModal(Modal, title = "Edit Bio"):
+class _BioModal(Modal, title = "Editing Biography"):
     def __init__(self, view : _PersonalizationView) -> None:
         super().__init__()
         self.view = view
@@ -245,7 +237,7 @@ class _BioModal(Modal, title = "Edit Bio"):
         self._bio = TextInput[Self](
             style       = TextStyle.paragraph,
             placeholder = "Write a short biography...",
-            default     = view.bio,
+            default     = view.biography,
             required    = False,
             max_length  = 300,
         )
@@ -255,7 +247,7 @@ class _BioModal(Modal, title = "Edit Bio"):
             component   = self._bio,
         )
 
-        self.add_items(self.bio)
+        self.add_item(self.bio)
 
     @override
     async def on_submit(self, interaction : Interaction) -> None:
@@ -267,23 +259,23 @@ class _BioModal(Modal, title = "Edit Bio"):
         if not me:
             return
 
-        bio = self._bio.value.strip() or None
+        biography = self._bio.value.strip() or None
 
-        if bio is not None and (violation := find_violation(bio)):
+        if biography is not None and (violation := find_violation(biography)):
             await send_bad_argument(
                 interaction,
-                title    = "set bio",
-                subtitle = {"bio" : violation},
+                title    = "set biography",
+                subtitle = {"biography" : violation},
             )
             return
 
         try:
-            await me.edit(bio = bio)
+            await me.edit(bio = biography)
         except HTTPException:
-            await send_bad_operation(interaction, title = "set bio")
+            await send_bad_operation(interaction, title = "set biography")
             return
 
-        self.view.bio = bio
+        self.view.biography = biography
         self.view.update_pages()
 
         await interaction.response.edit_message(view = self.view)
@@ -310,19 +302,19 @@ class _PersonalizationView(NamedPaginator):
         *,
         avatar_url : str | None,
         banner_url : str | None,
-        bio        : str | None,
+        biography  : str | None,
     ) -> None:
         self.style      = style
         self.avatar_url = avatar_url
         self.banner_url = banner_url
-        self.bio        = bio
+        self.biography  = biography
 
-        self.font_select   = _FontSelect()
-        self.effect_select = _EffectSelect()
-        self.color_button  = _ColorsButton()
-        self.avatar_button = _ImageButton("avatar")
-        self.banner_button = _ImageButton("banner")
-        self.bio_button    = _BioButton()
+        self.font_select      = _FontSelect()
+        self.effect_select    = _EffectSelect()
+        self.color_button     = _ColorsButton()
+        self.avatar_button    = _ImageButton("avatar")
+        self.banner_button    = _ImageButton("banner")
+        self.biography_button = _BioButton()
 
         initial_pages = [
             PageData(
@@ -437,13 +429,11 @@ class _PersonalizationView(NamedPaginator):
             )
         )
 
-        bio = "\n".join(f"> {line}" for line in (self.bio or "").splitlines())
-
-        txt_bio = (
+        txt_biography = (
             (
                 "**Biography**\n"
-                f"{bio}"
-            ) if self.bio else (
+                f">>>> {self.biography}"
+            ) if self.biography else (
                 "**Biography**\n"
                 "No server biography is set."
             )
@@ -479,7 +469,7 @@ class _PersonalizationView(NamedPaginator):
                 description = "Personalize my biography.",
                 content     = [
                     "# Biography",
-                    ButtonSection(txt_bio, button = self.bio_button),
+                    ButtonSection(txt_biography, button = self.biography_button),
                 ],
             ),
         ]
@@ -498,8 +488,8 @@ async def run_server_personalize(interaction : Interaction) -> None:
     if not guild:
         return
 
-    style = await interaction.client.get_name_style(guild)
-    bio   = await interaction.client.get_bio(guild)
+    style     = await interaction.client.get_name_style(guild)
+    biography = await interaction.client.get_biography(guild)
 
     me = guild.me
     if not me:
@@ -512,7 +502,7 @@ async def run_server_personalize(interaction : Interaction) -> None:
         style,
         avatar_url = avatar.url if avatar else None,
         banner_url = banner.url if banner else None,
-        bio        = bio,
+        biography  = biography,
     )
     await interaction.response.send_message(view = view, ephemeral = True)
     view.message = await interaction.original_response()

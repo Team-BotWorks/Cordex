@@ -11,14 +11,14 @@ from discord import Color
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
 
-COLOR_BLUE    = Color(0x87acdf)
-COLOR_GREEN   = Color(0x3BA562)
-COLOR_YELLOW  = Color(0xF1B133)
-COLOR_ORANGE  = Color(0xEE773E)
-COLOR_RED     = Color(0xEB3D48)
-COLOR_BLACK   = Color(0x000000)
-COLOR_GREY    = Color(0xABABAB)
-COLOR_WHITE   = Color(0xFFFFFF)
+COLOR_BLUE   = Color(0x87acdf)
+COLOR_GREEN  = Color(0x3BA562)
+COLOR_YELLOW = Color(0xF1B133)
+COLOR_ORANGE = Color(0xEE773E)
+COLOR_RED    = Color(0xEB3D48)
+COLOR_BLACK  = Color(0x000000)
+COLOR_GREY   = Color(0xABABAB)
+COLOR_WHITE  = Color(0xFFFFFF)
 
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 # User IDs
@@ -136,6 +136,8 @@ PET_CORDEX_EMOJI = "<a:pet_cordex:1526024713078571141>"
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 # Display Name Enums
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
+
+# ⸻ https://docs.discord.food/resources/user#display-name-style-structure
 
 
 class DisplayNameFont(IntEnum):
