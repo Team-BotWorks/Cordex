@@ -560,7 +560,7 @@ class Actions:
     # quarantine_view
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
-    async def quarantine_view(self) -> UnnamedPaginator | None:  # TODO(FinestPerfectionism): Consider quarantined members that have left the guild.
+    async def quarantine_view(self) -> UnnamedPaginator | None:
         """
         Display a paginator (`UnnamedPaginator`) of all members in quarantine.
 

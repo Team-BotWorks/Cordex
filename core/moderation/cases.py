@@ -86,13 +86,14 @@ class _CreateCaseResult:
     case       : Case | None
 
 
-@dataclass(frozen = True, slots = True)
+@dataclass(frozen = True, slots = True, kw_only = True)
 class Case:
     """
     Represents a moderation case.
 
     Parameters
     ----------
+    *
     id : `int`
         The ID of the case.
     action_type : `ActionType`
@@ -192,8 +193,10 @@ class CasesManager:
             target = None
 
         channel_id = cast("int | None", row["channel_id"])
-        # ⸻ TODO(FinestPerfectionism): This has failed and will continue to fail in cases where the channel has been deleted!
-        channel    = self.guild.get_channel(channel_id) or await self.guild.fetch_channel(channel_id) if channel_id else None
+        try:
+            channel = self.guild.get_channel(channel_id) or await self.guild.fetch_channel(channel_id) if channel_id else None
+        except NotFound:
+            channel = None
 
         created_at = cast("str | datetime", row["created_at"])
         if isinstance(created_at, str):
