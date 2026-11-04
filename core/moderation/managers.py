@@ -1,6 +1,6 @@
 from typing import Literal, cast, final, overload
 
-from discord import Color, Forbidden, Guild, HTTPException, Member, Permissions, Role
+from discord import Forbidden, Guild, HTTPException, Member, Permissions, Role
 
 from bot import Cordex, log
 from bot.types import GuildMessageableChannel
@@ -400,36 +400,27 @@ class QuarantineManager:
         """
         config = self.bot.config(self.guild)
 
-        deleted = False
         quarantine_role = await config.get_moderation_quarantine_role()
         if not quarantine_role:
             if not await self.get():
                 return
 
-            try:
-                quarantine_role = await self.guild.create_role(
-                    name        = "Quarantine",
-                    color       = Color.dark_gold(),
-                    permissions = Permissions.none(),
-                    reason      = "Quarantine enforcement. Previous role was deleted.",
+            channel = await config.get_moderation_logging_channel()
+            if channel:
+                await format_send(
+                    channel,
+                    MessageType.error,
+                    title    = "The quarantine role was deleted",
+                    subtitle = "All quarantined members are no longer being contained! This cannot be undone",
+                    override = FormatOverride(prefix = False),
                 )
-            except Forbidden:
-                return
-            except HTTPException as e:
-                rate_limited = (e.status == RATE_LIMITED)
-                self._log_failure("quarantine enforcement", rate_limited = rate_limited)
-                if rate_limited:
-                    raise
-                return
-
-            await config.set_moderation_quarantine_role(quarantine_role)
-            deleted = True
+            return
 
         # ⸻ Channels
 
-        if enforce_type == "Channels" or deleted:
+        if enforce_type == "Channels":
             wants_enforcement = await config.get_whether_moderation_quarantine_enforce_channels()
-            if not wants_enforcement and not deleted:
+            if not wants_enforcement:
                 return
 
             me = self.guild.me
@@ -464,9 +455,9 @@ class QuarantineManager:
 
         # ⸻ Role
 
-        if enforce_type == "Role" or deleted:
+        if enforce_type == "Role":
             wants_enforcement = await config.get_whether_moderation_quarantine_enforce_roles()
-            if not wants_enforcement and not deleted:
+            if not wants_enforcement:
                 return
 
             me = self.guild.me
@@ -498,7 +489,7 @@ class QuarantineManager:
 
         # ⸻ Members
 
-        if enforce_type == "Members" or deleted:
+        if enforce_type == "Members":
             me = self.guild.me
             if not me or not me.guild_permissions.manage_roles:
                 return
@@ -540,17 +531,3 @@ class QuarantineManager:
                     self._log_failure("member quarantine enforcement (addition)", rate_limited = rate_limited)
                     if rate_limited:
                         raise
-
-        channel = await config.get_moderation_logging_channel()
-        if deleted and channel:
-            await format_send(
-                channel,
-                MessageType.warning,
-                title    = "The quarantine role was deleted",
-                subtitle = (
-                   f"The quarantine role was deleted. I have created a new one ({quarantine_role.mention}) and transferred all quarantined members over.\n"
-                    "If you'd like to remove quarantine operations, remove all members from quarantine first, then delete the role."
-                ),
-                footer   = "Please do not delete the quarantine role!",
-                override = FormatOverride(prefix = False),
-            )
