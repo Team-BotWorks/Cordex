@@ -11,6 +11,7 @@ from discord import (
     Guild,
     HTTPException,
     Member,
+    NotFound,
     User,
 )
 
@@ -96,7 +97,7 @@ class Case:
         The ID of the case.
     action_type : `ActionType`
         The type of the case.
-    moderator : `Member`
+    moderator : `Member | User`
         The moderator of the case.
     target : `Member | User | None`
         The target of the case.
@@ -133,7 +134,7 @@ class Case:
 
     id                : int
     action_type       : ActionType
-    moderator         : Member
+    moderator         : Member | User
     target            : Member | User    | None
     reason            : str
     channel           : GuildMessageable | None
@@ -167,11 +168,17 @@ class CasesManager:
         self.bot   = bot
         self.guild = guild
 
+    async def _force_fetch(self, user_id : int, /) -> Member | User:
+        try:
+            return self.guild.get_member(user_id) or await self.guild.fetch_member(user_id)
+        except NotFound:
+            return self.bot.get_user(user_id) or await self.bot.fetch_user(user_id)
+
     async def _row_to_case(self, row : Row, /) -> Case:
         moderator_id = cast("int", row["moderator_id"])
         target_id    = cast("int | None", row["target_id"])
 
-        moderator = self.guild.get_member(moderator_id) or await self.guild.fetch_member(moderator_id)
+        moderator = await self._force_fetch(moderator_id)
 
         raw_action  = cast("str", row["action_type"])
         action_type = next(action for action in ActionType if action.value == raw_action or action.sql() == raw_action)
@@ -180,11 +187,12 @@ class CasesManager:
             if action_type == ActionType.ban_remove:
                 target = self.bot.get_user(target_id) or await self.bot.fetch_user(target_id)
             else:
-                target = self.guild.get_member(target_id) or await self.guild.fetch_member(target_id)
+                target = await self._force_fetch(target_id)
         else:
             target = None
 
         channel_id = cast("int | None", row["channel_id"])
+        # ⸻ TODO(FinestPerfectionism): This has failed and will continue to fail in cases where the channel has been deleted!
         channel    = self.guild.get_channel(channel_id) or await self.guild.fetch_channel(channel_id) if channel_id else None
 
         created_at = cast("str | datetime", row["created_at"])

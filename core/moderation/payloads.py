@@ -32,6 +32,8 @@ class _BaseLockdownPayload:
     channel   : GuildMessageableChannel
     reason    : str
 
+# ⸻ Do note that not all types will inherit from their base paylod.
+
 
 @dataclass
 class LockdownAddPayload(_BaseLockdownPayload):
