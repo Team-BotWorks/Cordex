@@ -113,7 +113,14 @@ class _ConfigModal(Modal):
         self._view    = view
         self._state   = state
 
-        mentions = "\n".join(f"- {target.mention}" for target in allowed) or "- @everyone"
+        configuration_required = is_restriction_required(command)
+
+        if allowed:
+            mentions = "\n".join(f"- {target.mention}" for target in allowed)
+        elif configuration_required:
+            mentions = "- No one, Command requires restriction."
+        else:
+            mentions = "- @everyone"
 
         self.current_allowed = TextDisplay[Self](
            f"**Currently allowed:**\n"
@@ -121,8 +128,6 @@ class _ConfigModal(Modal):
             "\n"
             "Please note that the guild owner may *always* run commands.",
         )
-
-        configuration_required = is_restriction_required(command)
 
         description = "The users/roles allowed to run the command. Uses OR logic."
         if not configuration_required:
@@ -155,17 +160,24 @@ class _ConfigModal(Modal):
         config = client.config(guild)
         quarantine_role = await config.get_moderation_quarantine_role()
         if quarantine_role in allowed:
+            await send_bad_argument(interaction, subtitle = "The quarantine role cannot be used as a command restriction.")
+            return
+
+        blocklist = [blocklisted for blocklisted in await client.blocklist.get() if isinstance(blocklisted, User)]
+        if blocklisted_users_in_allowed := [
+            allowed_member
+            for allowed_member in allowed
+            for blocklisted    in blocklist
+            if allowed_member.id == blocklisted.id
+        ]:
             await send_bad_argument(
                 interaction,
-                subtitle = {"allowed" : "The quarantine role cannot be used as a command restriction."},
+                subtitle = f"Blocklisted users cannot be used as command restrictions: {", ".join(blocklisted.mention for blocklisted in blocklisted_users_in_allowed)}",
             )
             return
 
         if guild.default_role in allowed:
-            await send_bad_argument(
-                interaction,
-                subtitle = {"allowed" : "The @everyone role cannot be used as a command restriction."},
-            )
+            await send_bad_argument(interaction, subtitle = "The @everyone role cannot be used as a command restriction.")
             return
 
         try:
@@ -278,17 +290,11 @@ class _GroupConfigModal(Modal):
         config = client.config(guild)
         quarantine_role = await config.get_moderation_quarantine_role()
         if quarantine_role in allowed:
-            await send_bad_argument(
-                interaction,
-                subtitle = {"allowed" : "The quarantine role cannot be used as a command restriction."},
-            )
+            await send_bad_argument(interaction, subtitle = "The quarantine role cannot be used as a command restriction.")
             return
 
         if guild.default_role in allowed:
-            await send_bad_argument(
-                interaction,
-                subtitle = {"allowed" : "The @everyone role cannot be used as a command restriction."},
-            )
+            await send_bad_argument(interaction, subtitle = "The @everyone role cannot be used as a command restriction.")
             return
 
         affected : CommandList = []
