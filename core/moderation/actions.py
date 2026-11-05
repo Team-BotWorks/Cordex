@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from datetime import timedelta
-from typing import final
+from typing import Self, final
 
 from discord import Enum, Forbidden, Guild, HTTPException, Message
 from discord.utils import escape_markdown, format_dt, utcnow
@@ -41,6 +41,56 @@ class ActionType(Enum):
     timeout_add       = "timeout_add"
     timeout_remove    = "timeout_remove"
     purge             = "purge"
+
+    @classmethod
+    def from_sql(cls, value : str, /) -> Self:
+        """
+        Get a moderation action from its SQL form.
+
+        Parameters
+        ----------
+        value : `str`
+            The SQL form of the action type.
+        /
+
+        Returns
+        -------
+        `Self`
+            The moderation action.
+
+        Raises
+        ------
+        ValueError
+            The SQL form doesn't match any moderation action.
+        """
+        if not hasattr(cls, "_sql_map"):
+            cls._sql_map = {member.sql() : member for member in cls}
+
+        try:
+            return cls._sql_map[value]
+        except KeyError:
+            error = f"{value} is not a valid form for ActionType"
+            raise ValueError(error) from None
+
+    @property
+    def is_additive_type(self) -> bool:
+        return self in {
+            ActionType.lockdown_add,
+            ActionType.ban_add,
+            ActionType.kick,
+            ActionType.quarantine_add,
+            ActionType.timeout_add,
+            ActionType.purge,
+        }
+
+    @property
+    def is_removal_type(self) -> bool:
+        return self in {
+            ActionType.lockdown_remove,
+            ActionType.ban_remove,
+            ActionType.quarantine_remove,
+            ActionType.timeout_remove,
+        }
 
     def readable(self) -> str:
         """

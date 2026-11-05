@@ -15,15 +15,14 @@ from discord import Member, Role
 
 def hierarchy(
     actor      : Member,
-    comparison : Literal[">", "<", "=", ">=", "<="],
+    comparison : Literal[">", "<", "==", ">=", "<="],
     target     : Member,
     /,
 ) -> bool:
-
     # ⸻ Actor vs Themselves
 
     if actor == target:
-        return comparison in {"=", ">=", "<="}
+        return comparison in {"==", ">=", "<="}
 
     # ⸻ Actor is Owner
 

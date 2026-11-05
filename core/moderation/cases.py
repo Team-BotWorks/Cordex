@@ -148,6 +148,14 @@ class Case:
     expired           : bool
     related_case_id   : int              | None
 
+    async def expire(self) -> None:
+        if ...:
+            error = f"Case {self.id} is not expirable: action type is a removal type"
+            raise TypeError(error)
+
+    async def delete(self) -> None:
+        ...
+
 
 @final
 class CasesManager:
@@ -182,7 +190,7 @@ class CasesManager:
         moderator = await self._force_fetch(moderator_id)
 
         raw_action  = cast("str", row["action_type"])
-        action_type = next(action for action in ActionType if action.value == raw_action or action.sql() == raw_action)
+        action_type = ActionType.from_sql(raw_action)
 
         if target_id is not None:
             if action_type == ActionType.ban_remove:
@@ -198,10 +206,6 @@ class CasesManager:
         except NotFound:
             channel = None
 
-        created_at = cast("str | datetime", row["created_at"])
-        if isinstance(created_at, str):
-            created_at = datetime.fromisoformat(created_at)
-
         return Case(
             id                = cast("int", row["id"]),
             action_type       = action_type,
@@ -209,7 +213,7 @@ class CasesManager:
             target            = target,
             reason            = cast("str", row["reason"]),
             channel           = channel if isinstance(channel, GuildMessageable) else None,
-            created_at        = created_at,
+            created_at        = cast("datetime", row["created_at"]),
             dm_user           = bool(cast("int | None", row["dm_user"])),
             seconds_to_delete = cast("int | None", row["seconds_to_delete"]),
             timeout_length    = cast("int | None", row["timeout_length"]),
@@ -478,7 +482,7 @@ class CasesManager:
             successful = successful,
             case       = Case(
                 id                = new_case_id,
-                action_type       = next(action for action in ActionType if action.value == action_type or action.sql() == action_type),
+                action_type       = ActionType.from_sql(action_type),
                 moderator         = payload.moderator,
                 target            = (
                     payload.target if not
@@ -617,33 +621,24 @@ class CasesManager:
 
         if action_type is not None:
             conditions.append(t"action_type = {action_type.sql()}")
-
         if moderator_id is not None:
             conditions.append(t"moderator_id = {moderator_id}")
-
         if target_id is not None:
             conditions.append(t"target_id = {target_id}")
-
         if channel_id is not None:
             conditions.append(t"channel_id = {channel_id}")
-
         if expired is not None:
-            expired_int = int(expired)
-            conditions.append(t"expired = {expired_int}")
-
+            conditions.append(t"expired = {int(expired)}")
         if before is not None:
-            conditions.append(t"created_at < {before.isoformat()}")
-
+            conditions.append(t"created_at < {before}")
         if after is not None:
-            conditions.append(t"created_at > {after.isoformat()}")
+            conditions.append(t"created_at > {after}")
 
-        query = t"SELECT * FROM Cases"
-        if conditions:
-            query += t" WHERE "
-            for index, condition in enumerate(conditions):
-                if index > 0:
-                    query += t" AND "
-                query += condition
+        query = t"SELECT * FROM Cases WHERE "
+        for i, condition in enumerate(conditions):
+            if i > 0:
+                query += t" AND "
+            query += condition
 
         query += t" ORDER BY id DESC"
 

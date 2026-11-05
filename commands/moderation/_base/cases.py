@@ -44,7 +44,7 @@ def _format_summary(case : Case) -> str:
     if case.channel is not None:
         subjects.append(case.channel.mention)
     if not subjects:
-        subjects.append("Unknown Member")
+        subjects.append("Unknown Target")
 
     subjects.append(case.moderator.mention)
 

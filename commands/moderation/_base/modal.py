@@ -595,7 +595,10 @@ class _ModerationModal(Modal):
                     f"{format_table(table)}"
                 )
 
-                footer = "\n-#".join(notes)
+                footer = (
+                    "\n"
+                    "-#"
+                ).join(notes)
 
                 if all(statuses):
                     title    = f"The {modal.name} was successful."
@@ -662,10 +665,10 @@ async def send_moderation_modal(
     if not guild or not isinstance(user, Member):
         return
 
-    check_target = purge_target if action_type == ActionType.purge else target
-
-    if isinstance(check_target, Member):
-
+    if isinstance(
+        check_target := purge_target if action_type == ActionType.purge else target,
+        Member,
+    ):
         # ⸻ You cannot moderate yourself.
 
         if check_target == interaction.user:
@@ -676,32 +679,11 @@ async def send_moderation_modal(
             return
 
         if not hierarchy(user, ">", check_target):
-            if hierarchy(user, "=", check_target):
-                if check_target == client.user:
-                    await send_bad_argument(
-                        interaction,
-                        subtitle = {"target" : f"{check_target.mention} is equal to you in the hierarchy."},
-                        footer   = "Nice try",
-                    )
-                    return
-
-                await send_bad_argument(
-                    interaction,
-                    subtitle = {"target" : f"{check_target.mention} is equal to you in the hierarchy."},
-                )
-                return
-
-            if check_target == client.user:
-                await send_bad_argument(
-                    interaction,
-                    subtitle = {"target" : f"{check_target.mention} is higher in the hierarchy than you."},
-                    footer   = "Nice try",
-                )
-                return
-
+            relation = "equal to you" if hierarchy(user, "==", check_target) else "higher than you"
             await send_bad_argument(
                 interaction,
-                subtitle = {"target" : f"{check_target.mention} is higher in the hierarchy than you."},
+                subtitle = {"target" : f"{check_target.mention} is {relation} in the hierarchy."},
+                footer   = "Nice try" if check_target == client.user else "Bad argument",
             )
             return
 
