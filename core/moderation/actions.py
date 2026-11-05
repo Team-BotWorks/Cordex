@@ -63,14 +63,12 @@ class ActionType(Enum):
         ValueError
             The SQL form doesn't match any moderation action.
         """
-        if not hasattr(cls, "_sql_map"):
-            cls._sql_map = {member.sql : member for member in cls}
+        for member in cls:
+            if member.sql == value:
+                return member
 
-        try:
-            return cls._sql_map[value]
-        except KeyError:
-            error = f"{value} is not a valid form for ActionType"
-            raise ValueError(error) from None
+        error = f"{value} is not a valid form for ActionType"
+        raise ValueError(error) from None
 
     @property
     def is_additive_type(self) -> bool:
