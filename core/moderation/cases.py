@@ -566,6 +566,38 @@ class CasesManager:
         return await self._row_to_case(row)
 
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
+    # get_member_active_case
+    # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
+
+    async def get_member_active_case(self, member : Member, /) -> Case | None:
+        """
+        Get the active case for a member.
+
+        Parameters
+        ----------
+        member : `Member`
+            The member whose active case to get.
+        /
+
+        Returns
+        -------
+        `Case | None`
+            The case if any, otherwise None.
+        """
+        try:
+            async with self.bot.db.execute(
+                t"SELECT * FROM Cases WHERE guild_id = {self.guild.id} AND expired = 0 AND target_id = {member.id}",
+            ) as cursor:
+                row = await cursor.fetchone()
+                if row is None:
+                    return None
+        except Exception:
+            self._log_failure(f"fetching {member.name}'s active case")
+            return None
+
+        return await self._row_to_case(row)
+
+    # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
     # get_all_cases
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
