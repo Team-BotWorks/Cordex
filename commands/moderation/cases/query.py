@@ -150,16 +150,6 @@ async def run_moderation_cases_query(
         )
         return
 
-    if expired is False:
-        cases = [
-            case for case in cases if
-            case.action_type not in {
-                ActionType.ban_remove,
-                ActionType.quarantine_remove,
-                ActionType.timeout_remove,
-            }
-        ]
-
     if not cases:
         if not await manager.get_all_cases():
             await format_send(

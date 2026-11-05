@@ -561,10 +561,10 @@ class _ModerationModal(Modal):
 
                 notes : list[str] = []
                 if not result.failed:
-                    table[modal.action_type.readable()] = f"{ACCEPTED_EMOJI} Success."
+                    table[modal.action_type.readable] = f"{ACCEPTED_EMOJI} Success."
                     statuses.append(True)
                 else:
-                    table[modal.action_type.readable()] = f"{DENIED_EMOJI} Failure."
+                    table[modal.action_type.readable] = f"{DENIED_EMOJI} Failure."
                     statuses.append(False)
 
                 if result.dmed is True:
@@ -709,6 +709,24 @@ async def send_moderation_modal(
                 subtitle = {"target" : f"{check_target.mention} is already quarantined."},
             )
             return
+
+        if action_type in {
+            ActionType.ban_add,
+            ActionType.kick,
+            ActionType.timeout_add,
+        } and await manager.is_quarantined(check_target):
+            moderated = {
+                ActionType.ban_add     : "banned",
+                ActionType.kick        : "kicked",
+                ActionType.timeout_add : "timed out",
+            }[action_type]
+
+            await send_bad_argument(
+                interaction,
+                subtitle = {
+                    "target" : f"{check_target.mention} is currently quarantined and cannot be {moderated}. Remove them from quarantine first",
+                },
+            )
 
     if action_type in {ActionType.lockdown_add, ActionType.lockdown_remove} and isinstance(target, GuildMessageableChannel):
         manager = LockdownManager(client, guild)

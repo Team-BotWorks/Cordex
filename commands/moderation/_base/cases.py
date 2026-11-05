@@ -49,7 +49,7 @@ def _format_summary(case : Case) -> str:
     subjects.append(case.moderator.mention)
 
     lines = [
-        f"## {case.action_type.readable()}",
+        f"## {case.action_type.readable}",
         f"**{" | ".join(subjects)}**",
         f"*{escape_markdown(case.reason)}*",
     ]
@@ -69,7 +69,7 @@ def build_case_section[V : LayoutView](case : Case, manager : CasesManager) -> B
 
 async def build_case_view(bot : Cordex, case : Case, manager : CasesManager) -> LayoutView:
     view      = LayoutView()
-    container = Container[view](TextDisplay(f"# {case.action_type.readable()} | #{case.id}"), color = COLOR_GREY)
+    container = Container[view](TextDisplay(f"# {case.action_type.readable} | #{case.id}"), color = COLOR_GREY)
 
     sections : list[tuple[str, Member | User | None]] = [
         ("Target",    case.target),

@@ -64,7 +64,7 @@ class ActionType(Enum):
             The SQL form doesn't match any moderation action.
         """
         if not hasattr(cls, "_sql_map"):
-            cls._sql_map = {member.sql() : member for member in cls}
+            cls._sql_map = {member.sql : member for member in cls}
 
         try:
             return cls._sql_map[value]
@@ -74,6 +74,14 @@ class ActionType(Enum):
 
     @property
     def is_additive_type(self) -> bool:
+        """
+        Check if a moderation action is an additive type.
+
+        Returns
+        -------
+        `bool`
+            Whether the action is an additive type or not.
+        """
         return self in {
             ActionType.lockdown_add,
             ActionType.ban_add,
@@ -85,6 +93,14 @@ class ActionType(Enum):
 
     @property
     def is_removal_type(self) -> bool:
+        """
+        Check if a moderation action is a removal type.
+
+        Returns
+        -------
+        `bool`
+            Whether the action is a removal type or not.
+        """
         return self in {
             ActionType.lockdown_remove,
             ActionType.ban_remove,
@@ -92,6 +108,24 @@ class ActionType(Enum):
             ActionType.timeout_remove,
         }
 
+    @property
+    def expirable(self) -> bool:
+        """
+        Check if a moderation action is expirable.
+
+        Returns
+        -------
+        `bool`
+            Whether the action is expirable or not.
+        """
+        return self in {
+            ActionType.lockdown_add,
+            ActionType.ban_add,
+            ActionType.quarantine_add,
+            ActionType.timeout_add,
+        }
+
+    @property
     def readable(self) -> str:
         """
         Present a moderation action in a readable form.
@@ -103,6 +137,7 @@ class ActionType(Enum):
         """
         return self.value.replace("_", " ").title()
 
+    @property
     def sql(self) -> str:
         """
         Present a moderation action in SQL form.
@@ -401,8 +436,6 @@ class Actions:
                 reason                 = f"Banned by {action.moderator.name}: {action.reason}",
                 delete_message_seconds = action.seconds_to_delete,
             )
-            if action.target in await self.quarantine.get():
-                await self.quarantine.remove(action.target)  # TODO(FinestPerfectiomism): Expire the related quarantine case.
         except Forbidden:
             failed = True
         except HTTPException:

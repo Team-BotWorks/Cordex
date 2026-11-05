@@ -297,7 +297,7 @@ class ModerationCommands(
     )
     @choices(
         action_type = [
-            Choice(name = action_type.readable(), value = action_type.value)
+            Choice(name = action_type.readable, value = action_type.value)
             for action_type in ActionType
         ],
     )
@@ -353,9 +353,9 @@ class ModerationCommands(
             return []
 
         return [
-            Choice(name = f"#{case.id} | {case.action_type.readable()}", value = case.id)
+            Choice(name = f"#{case.id} | {case.action_type.readable}", value = case.id)
             for case in await CasesManager(interaction.client, guild).get_all_cases()
-            if current.lower() in f"#{case.id} | {case.action_type.readable()}".lower()
+            if current.lower() in f"#{case.id} | {case.action_type.readable}".lower()
         ][:25]
 
 

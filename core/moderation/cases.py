@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import cast, final
+from typing import Self, cast, final
 from warnings import warn
 
 from aiosqlite import Row
@@ -15,7 +15,7 @@ from discord import (
     User,
 )
 
-from bot import Cordex, log
+from bot import Cordex, cordex, log
 from bot.types import GuildMessageable
 from bot.ui import (
     Container,
@@ -98,6 +98,8 @@ class Case:
         The ID of the case.
     action_type : `ActionType`
         The type of the case.
+    guild : `Guild`
+        The guild of the case.
     moderator : `Member | User`
         The moderator of the case.
     target : `Member | User | None`
@@ -135,6 +137,7 @@ class Case:
 
     id                : int
     action_type       : ActionType
+    guild             : Guild
     moderator         : Member | User
     target            : Member | User    | None
     reason            : str
@@ -148,13 +151,39 @@ class Case:
     expired           : bool
     related_case_id   : int              | None
 
-    async def expire(self) -> None:
-        if ...:
-            error = f"Case {self.id} is not expirable: action type is a removal type"
+    async def expire(self, related_case : Self | None = None) -> None:
+        """
+        Expire this case.
+
+        Parameters
+        ----------
+        related_case : `Self | None = None`
+            The case related to this case.
+
+        Raises
+        ------
+        TypeError
+            This case is not expirable.
+        """
+        if not self.action_type.expirable:
+            error = f"Case {self.id} of type {self.action_type.readable.lower()} is not expirable"
             raise TypeError(error)
 
+        if related_case:
+            await cordex.db.execute(
+                t"UPDATE Cases SET expired = 1, related_case_id = {related_case.id} WHERE id = {self.id}",
+            )
+            await cordex.db.commit()
+
+        await cordex.db.execute(
+            t"UPDATE Cases SET expired = 1 WHERE id = {self.id}",
+        )
+        await cordex.db.commit()
+
     async def delete(self) -> None:
-        ...
+        """Delete this case."""
+        await cordex.db.execute(t"DELETE FROM Cases WHERE id = {self.id}")
+        await cordex.db.commit()
 
 
 @final
@@ -209,6 +238,7 @@ class CasesManager:
         return Case(
             id                = cast("int", row["id"]),
             action_type       = action_type,
+            guild             = self.guild,
             moderator         = moderator,
             target            = target,
             reason            = cast("str", row["reason"]),
@@ -303,13 +333,15 @@ class CasesManager:
                             related_case_id = cast("int", row[0])
 
             cursor = await self.bot.db.execute(
-                t"INSERT INTO Cases ("
-                t"    guild_id, action_type, moderator_id, target_id, reason, "
-                t"    dm_user, seconds_to_delete, timeout_length, channel_id, purge_amount, purge_force, related_case_id"
-                t") VALUES ("
-                t"    {guild_id}, {action_type}, {moderator_id}, {target_id}, {reason}, "
-                t"    {dm_user}, {seconds_to_delete}, {timeout_length}, {channel_id}, {purge_amount}, {purge_force}, {related_case_id}"
-                t")",
+               t"""
+                INSERT INTO Cases (
+                    guild_id, action_type, moderator_id, target_id, reason,
+                    dm_user, seconds_to_delete, timeout_length, channel_id, purge_amount, purge_force, related_case_id
+                ) VALUES (
+                    {guild_id}, {action_type}, {moderator_id}, {target_id}, {reason},
+                    {dm_user}, {seconds_to_delete}, {timeout_length}, {channel_id}, {purge_amount}, {purge_force}, {related_case_id}
+                )
+                """,
             )
             new_case_id = cursor.lastrowid
 
@@ -324,7 +356,7 @@ class CasesManager:
             )
             await self.bot.db.commit()
         except Exception:
-            self._log_failure("case database insertion")
+            self._log_failure("case database creation")
             return _CreateCaseResult(
                 successful = False,
                 case       = None,
@@ -483,6 +515,7 @@ class CasesManager:
             case       = Case(
                 id                = new_case_id,
                 action_type       = ActionType.from_sql(action_type),
+                guild             = self.guild,
                 moderator         = payload.moderator,
                 target            = (
                     payload.target if not
@@ -587,8 +620,9 @@ class CasesManager:
             The channel ID to filter by.
         expired : `bool | None = None`
             Whether the case is expired.
+            Note that cases with action types that are not expirable will not be returned if `expired` is `True` or `False`.
         before : `datetime | None = None`
-            Show cases created before this datetime..
+            Show cases created before this datetime.
         after : `datetime | None = None`
             Show cases created after this datetime.
 
@@ -620,15 +654,13 @@ class CasesManager:
         conditions = [t"guild_id = {self.guild.id}"]
 
         if action_type is not None:
-            conditions.append(t"action_type = {action_type.sql()}")
+            conditions.append(t"action_type = {action_type.sql}")
         if moderator_id is not None:
             conditions.append(t"moderator_id = {moderator_id}")
         if target_id is not None:
             conditions.append(t"target_id = {target_id}")
         if channel_id is not None:
             conditions.append(t"channel_id = {channel_id}")
-        if expired is not None:
-            conditions.append(t"expired = {int(expired)}")
         if before is not None:
             conditions.append(t"created_at < {before}")
         if after is not None:
@@ -649,7 +681,14 @@ class CasesManager:
             self._log_failure("filtering cases")
             return []
 
-        return list(reversed([await self._row_to_case(row) for row in rows]))
+        cases = [await self._row_to_case(row) for row in rows]
+
+        if expired is True:
+            cases = [case for case in cases if case.action_type.expirable and case.expired is True]
+        elif expired is False:
+            cases = [case for case in cases if case.action_type.expirable and case.expired is False]
+
+        return list(reversed(cases))
 
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
     # delete_all_cases
