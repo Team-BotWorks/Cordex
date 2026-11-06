@@ -58,7 +58,12 @@ def _format_summary(case : Case) -> str:
         forced = ", forced" if case.purge_force else ""
         lines.append(f"-# Purged {case.purge_amount} messages{forced}.")
 
-    lines.extend((f"-# Occurred at {format_dt(case.created_at, "F")}, {format_dt(case.created_at, "R")}.", f"-# Case ID: #{case.id}"))
+    lines.extend(
+        (
+            f"-# Occurred at {format_dt(case.created_at, "F")}, {format_dt(case.created_at, "R")}.",
+            f"-# Case ID: #{case.id}",
+        ),
+    )
 
     return "\n".join(lines)
 

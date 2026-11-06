@@ -432,7 +432,11 @@ class CasesManager:
         if moderator.guild_avatar:
             container.add_item(ThumbnailSection(moderator_info, thumbnail = Thumbnail[view](moderator.guild_avatar.url)))
         else:
-            container.add_text(moderator_info)
+            fetched_moderator = await self.bot.fetch_user(moderator.id)
+            if fetched_moderator.avatar:
+                container.add_item(ThumbnailSection(moderator_info, thumbnail = Thumbnail[view](fetched_moderator.avatar.url)))
+            else:
+                container.add_text(moderator_info)
 
         # ⸻ Case details.
 
