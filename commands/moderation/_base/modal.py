@@ -724,9 +724,10 @@ async def send_moderation_modal(
             await send_bad_argument(
                 interaction,
                 subtitle = {
-                    "target" : f"{check_target.mention} is currently quarantined and cannot be {moderated}. Remove them from quarantine first",
+                    "target" : f"{check_target.mention} is currently quarantined and cannot be {moderated}. Remove them from quarantine first.",
                 },
             )
+            return
 
     if action_type in {ActionType.lockdown_add, ActionType.lockdown_remove} and isinstance(target, GuildMessageableChannel):
         manager = LockdownManager(client, guild)

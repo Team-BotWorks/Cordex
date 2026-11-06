@@ -153,37 +153,41 @@ class QuarantineEnforcer(Cog):
 
     @Cog.listener("on_member_ban")
     async def _listener_quarantineenforce_memberban(self, guild : Guild, member : Member) -> None:
-        if not await self._quarantine(member.guild).is_quarantined(member):
+        manager = self._quarantine(member.guild)
+        if not await manager.is_quarantined(member):
             return
 
+        await manager.remove(member)
         if case := await self._cases(guild).get_member_active_case(member):
             await case.expire()
 
     @Cog.listener("on_member_remove")
     async def _listener_quarantineenforce_memberremove(self, member : Member) -> None:
-        if not await self._quarantine(member.guild).is_quarantined(member):
+        manager = self._quarantine(member.guild)
+        if not await manager.is_quarantined(member):
             return
 
         async for entry in member.guild.audit_logs(action = AuditLogAction.kick, limit = 1):
             target = entry.target
             if target and isinstance(target, User | Member):
                 target = cast("Member", target)
-                case   = await self._cases(entry.guild).get_member_active_case(target)
-                if await self._quarantine(entry.guild).is_quarantined(target) and case:
+                await manager.remove(target)
+                if case := await self._cases(entry.guild).get_member_active_case(target):
                     await case.expire()
 
     @Cog.listener("on_member_update")
     async def _listener_quarantineenforce_memberupdate_timeout(self, before : Member, after : Member) -> None:
-        if not await self._quarantine(after.guild).is_quarantined(after):
+        manager = self._quarantine(after.guild)
+        if not await manager.is_quarantined(after):
             return
 
-        case = await self._cases(after.guild).get_member_active_case(after)
         if (
             before.timed_out_until != after.timed_out_until
             and after.timed_out_until is not None
-            and case
         ):
-            await case.expire()
+            await manager.remove(after)
+            if case := await self._cases(after.guild).get_member_active_case(after):
+                await case.expire()
 
 
 async def setup(bot : Cordex) -> None:  # ruff: ignore[undocumented-public-function]
