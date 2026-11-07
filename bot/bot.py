@@ -22,7 +22,6 @@ from discord.ext.commands import (
     when_mentioned_or,
 )
 from discord.ext.commands import Context as BaseContext
-from discord.http import Route
 
 from constants import (
     COLOR_BLACK,
@@ -40,7 +39,7 @@ from core.state import (
 )
 
 from .context import Context, Tree
-from .types import NOT_PASSED, DisplayNameStyle
+from .types import NOT_PASSED, DisplayNameStyle, Route
 
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 # Bot & Client Management
@@ -144,7 +143,7 @@ class Cordex(Bot):
         return cast(
             "TypedDict[{'bio' : str}]",
             await self.http.request(
-                route = Route("PATCH", "/guilds/{guild_id}/members/@me", guild_id = guild.id),
+                route = Route("PATCH", t"/guilds/{guild.id}/members/@me"),
                 json  = {},
             ),
         )["bio"]
@@ -215,9 +214,8 @@ class Cordex(Bot):
             raise ValueError(error)
 
         color_integers = [color.value for color in colors]
-
         await self.http.request(
-            route = Route("PATCH", "/guilds/{guild_id}/members/@me", guild_id = guild.id),
+            route = Route("PATCH", t"/guilds/{guild.id}/members/@me"),
             json  = {
                 "display_name_font_id"   : font.value,
                 "display_name_effect_id" : effect.value,
@@ -250,17 +248,10 @@ class Cordex(Bot):
 
         response = cast(
             "TypedDict[{'display_name_styles' : NotRequired[TypedDict[{'font_id' : int, 'effect_id' : int, 'colors' : list[int]}] | None]}]",
-            await self.http.request(
-                route = Route(
-                    "GET", "/guilds/{guild_id}/members/{user_id}",
-                    guild_id = guild.id,
-                    user_id  = self.user.id,
-                ),
-            ),
+            await self.http.request(route = Route("GET", t"/guilds/{guild.id}/members/{self.user.id}")),
         )
 
         styles = response.get("display_name_styles")
-
         if styles is None:
             return DisplayNameStyle(
                 font   = DisplayNameFont(11),

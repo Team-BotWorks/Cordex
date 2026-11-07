@@ -295,7 +295,7 @@ class QuarantineManager:
         roles_str     = ",".join(str(role.id) for role in current_roles)
 
         await self.bot.db.execute(
-            t"INSERT INTO Quarantines (member_id, guild_id, old_roles) VALUES ({member.id}, {member.guild.id}, {roles_str}) "
+            t"INSERT INTO Quarantines (member_id, guild_id, old_roles) VALUES ({member.id}, {self.guild.id}, {roles_str}) "
             t"ON CONFLICT (member_id, guild_id) DO UPDATE SET old_roles = excluded.old_roles",
         )
         await self.bot.db.commit()
@@ -320,7 +320,7 @@ class QuarantineManager:
             The roles the member had before being quarantined, or `None` if the member was not marked to begin with.
         """
         async with self.bot.db.execute(
-            t"SELECT old_roles FROM Quarantines WHERE member_id = {member.id} AND guild_id = {member.guild.id}",
+            t"SELECT old_roles FROM Quarantines WHERE member_id = {member.id} AND guild_id = {self.guild.id}",
         ) as cursor:
             row = await cursor.fetchone()
 
@@ -330,7 +330,7 @@ class QuarantineManager:
         roles_str = cast("str", row[0])
 
         await self.bot.db.execute(
-            t"DELETE FROM Quarantines WHERE member_id = {member.id} AND guild_id = {member.guild.id}",
+            t"DELETE FROM Quarantines WHERE member_id = {member.id} AND guild_id = {self.guild.id}",
         )
         await self.bot.db.commit()
 

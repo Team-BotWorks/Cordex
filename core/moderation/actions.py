@@ -68,7 +68,7 @@ class ActionType(Enum):
                 return member
 
         error = f"{value} is not a valid form for ActionType"
-        raise ValueError(error) from None
+        raise ValueError(error)
 
     @property
     def is_additive_type(self) -> bool:
