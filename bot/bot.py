@@ -12,8 +12,8 @@ from aiosqlite import Row
 from discord import Color, Guild, Intents, Message, Status, User
 from discord import Interaction as BaseInteraction
 from discord.app_commands import AppCommand as APICommand
+from discord.ext.commands import Bot as BaseBot
 from discord.ext.commands import (
-    Bot,
     Cog,
     ExtensionAlreadyLoaded,
     ExtensionFailed,
@@ -55,7 +55,7 @@ log = get_logger("Cordex")
 
 
 @final
-class Cordex(Bot):
+class Cordex(BaseBot):
     """The main bot class."""
 
     def __init__(self) -> None:

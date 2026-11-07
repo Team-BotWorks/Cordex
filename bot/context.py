@@ -209,9 +209,17 @@ class Context(BaseContext["Cordex"]):
         if len(output) < 2000:
             return await self.send(output)
 
-        module   = getattr(target, "__module__", "global").replace(".", "/")
-        qualname = getattr(target, "__qualname__", "object")
-        content  = f"```{module}/{qualname}```"
+        module         = getattr(
+            target,
+            "__module__",
+            target.__name__ if isinstance(target, ModuleType) else "global",
+        ).replace(".", "/")
+        qualified_name = getattr(
+            target,
+            "__qualname__",
+            "object" if not isinstance(target, ModuleType) else target.__name__.split(".")[-1],
+        )
+        content  = f"```{module}/{qualified_name}```"
         filename = f"{module.split('/')[-1]}.py"
         return await self.send_file(content, file_content = ",\n".join(attributes), file_name = filename)
 
@@ -224,18 +232,29 @@ class Context(BaseContext["Cordex"]):
             target = fget
 
         source = getsource(target)
-        msg    = (
+
+        module         = getattr(
+            target,
+            "__module__",
+            target.__name__ if isinstance(target, ModuleType) else "global",
+        ).replace(".", "/")
+        qualified_name = getattr(
+            target,
+            "__qualname__",
+            "object" if not isinstance(target, ModuleType) else target.__name__.split(".")[-1],
+        )
+
+        definition = (
+           f"```{module}/{qualified_name}```\n"
             "```py\n"
            f"{source}\n"
             "```"
         )
 
-        if len(msg) < 2000:
-            return await self.send(msg)
+        if len(definition) < 2000:
+            return await self.send(definition)
 
-        module   = getattr(target, "__module__", "global").replace(".", "/")
-        qualname = getattr(target, "__qualname__", "object")
-        content  = f"```{module}/{qualname}```"
+        content  = f"```{module}/{qualified_name}```"
         filename = f"{module.split('/')[-1]}.py"
         return await self.send_file(content, file_content = source, file_name = filename)
 
