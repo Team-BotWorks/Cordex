@@ -35,8 +35,8 @@ async def run_botowner_sql(ctx : Context, body : str) -> None:
 
     query = "\n".join(body.split("\n")[1 : -1]) if body.startswith("```") else body.strip("` \n")
 
-    try:
-        async with db.base_execute(query) as cursor:
+    async with db.base_execute(query) as cursor:
+        try:
             if cursor.description and len(cursor.description) > 0:
                 await db.commit()
                 await ctx.send_file(
@@ -48,11 +48,11 @@ async def run_botowner_sql(ctx : Context, body : str) -> None:
                 )
             else:
                 await db.commit()
-    except Exception as e:
-        await db.rollback()
-        await message.add_reaction(DENIED_EMOJI)
-        async with channel.typing():
-            await ctx.send(codeblock(f"{e.__class__.__name__}: {e}"), delete_after = 15)
-        return
+        except Exception as e:
+            await db.rollback()
+            await message.add_reaction(DENIED_EMOJI)
+            async with channel.typing():
+                await ctx.send(codeblock(f"{e.__class__.__name__}: {e}"), delete_after = 15)
+            return
 
     await message.add_reaction(ACCEPTED_EMOJI)

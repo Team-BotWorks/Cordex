@@ -314,24 +314,39 @@ class CasesManager:
             purge_amount = payload.amount
             purge_force  = int(payload.force)
 
-        try:
-            if action_type.endswith("remove") and (target_id is not None or channel_id is not None):
-                corresponding = action_type.replace("remove", "add")
-                if target_id is not None:
+        if action_type.endswith("remove") and (target_id is not None or channel_id is not None):
+            corresponding = action_type.replace("remove", "add")
+            if target_id is not None:
+                try:
                     async with self.bot.db.execute(
                         t"SELECT id FROM Cases WHERE guild_id = {guild_id} AND target_id = {target_id} AND action_type = {corresponding} AND expired = 0 ORDER BY id DESC LIMIT 1",
                     ) as cursor:
                         row = await cursor.fetchone()
-                        if row is not None:
-                            related_case_id = cast("int", row[0])
-                elif channel_id is not None:
+                except Exception:
+                    self._log_failure("case database creation")
+                    return _CreateCaseResult(
+                        successful = False,
+                        case       = None,
+                    )
+                if row is not None:
+                    related_case_id = cast("int", row[0])
+            elif channel_id is not None:
+                try:
                     async with self.bot.db.execute(
                         t"SELECT id FROM Cases WHERE guild_id = {guild_id} AND channel_id = {channel_id} AND action_type = {corresponding} AND expired = 0 ORDER BY id DESC LIMIT 1",
                     ) as cursor:
                         row = await cursor.fetchone()
-                        if row is not None:
-                            related_case_id = cast("int", row[0])
+                except Exception:
+                    self._log_failure("case database creation")
+                    return _CreateCaseResult(
+                        successful = False,
+                        case       = None,
+                    )
 
+                if row is not None:
+                    related_case_id = cast("int", row[0])
+
+        try:
             cursor = await self.bot.db.execute(
                t"""
                 INSERT INTO Cases (
@@ -344,13 +359,20 @@ class CasesManager:
                 """,
             )
             new_case_id = cursor.lastrowid
+        except Exception:
+            self._log_failure("case database creation")
+            return _CreateCaseResult(
+                successful = False,
+                case       = None,
+            )
 
-            if not new_case_id:
-                return _CreateCaseResult(
-                    successful = False,
-                    case       = None,
-                )
+        if not new_case_id:
+            return _CreateCaseResult(
+                successful = False,
+                case       = None,
+            )
 
+        try:
             await self.bot.db.execute(
                 t"UPDATE Cases SET expired = 1, related_case_id = {new_case_id} WHERE guild_id = {guild_id} AND id = {related_case_id}",
             )
@@ -361,8 +383,8 @@ class CasesManager:
                 successful = False,
                 case       = None,
             )
-        else:
-            successful = True
+
+        successful = True
 
         view = LayoutView()
         container = Container[view](TextDisplay(f"# {data.title} | #{new_case_id}"), color = data.color)
