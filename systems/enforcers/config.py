@@ -79,5 +79,4 @@ class ConfigEnforcer(Cog):
 
 
 async def setup(bot : Cordex) -> None:  # ruff: ignore[undocumented-public-function]
-    cog = ConfigEnforcer(bot)
-    await bot.add_cog(cog)
+    await bot.add_cog(ConfigEnforcer(bot))

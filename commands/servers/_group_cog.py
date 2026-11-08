@@ -73,5 +73,4 @@ class ServerCommands(
 
 
 async def setup(bot : Cordex) -> None:
-    cog = ServerCommands()
-    await bot.add_cog(cog)
+    await bot.add_cog(ServerCommands())

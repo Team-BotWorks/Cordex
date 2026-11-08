@@ -360,5 +360,4 @@ class ModerationCommands(
 
 
 async def setup(bot : Cordex) -> None:
-    cog = ModerationCommands()
-    await bot.add_cog(cog)
+    await bot.add_cog(ModerationCommands())

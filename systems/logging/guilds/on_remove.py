@@ -64,5 +64,4 @@ class GuildRemoveLogging(Cog):
 
 
 async def setup(bot : Cordex) -> None:  # ruff: ignore[undocumented-public-function]
-    cog = GuildRemoveLogging(bot)
-    await bot.add_cog(cog)
+    await bot.add_cog(GuildRemoveLogging(bot))

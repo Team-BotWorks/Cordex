@@ -132,5 +132,4 @@ class MemberCommands(
 
 
 async def setup(bot : Cordex) -> None:
-    cog = MemberCommands()
-    await bot.add_cog(cog)
+    await bot.add_cog(MemberCommands())

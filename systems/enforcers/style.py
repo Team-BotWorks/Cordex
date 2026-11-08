@@ -24,5 +24,4 @@ class StyleEnforcer(Cog):
 
 
 async def setup(bot : Cordex) -> None:  # ruff: ignore[undocumented-public-function]
-    cog = StyleEnforcer(bot)
-    await bot.add_cog(cog)
+    await bot.add_cog(StyleEnforcer(bot))

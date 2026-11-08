@@ -97,5 +97,4 @@ class MessageDeleteLogging(Cog):
 
 
 async def setup(bot : Cordex) -> None:  # ruff: ignore[undocumented-public-function]
-    cog = MessageDeleteLogging(bot)
-    await bot.add_cog(cog)
+    await bot.add_cog(MessageDeleteLogging(bot))

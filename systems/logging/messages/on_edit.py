@@ -127,5 +127,4 @@ class MessageEditLogging(Cog):
 
 
 async def setup(bot : Cordex) -> None:  # ruff: ignore[undocumented-public-function]
-    cog = MessageEditLogging(bot)
-    await bot.add_cog(cog)
+    await bot.add_cog(MessageEditLogging(bot))

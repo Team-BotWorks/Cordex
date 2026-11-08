@@ -140,5 +140,4 @@ class RoleCommands(
 
 
 async def setup(bot : Cordex) -> None:
-    cog = RoleCommands()
-    await bot.add_cog(cog)
+    await bot.add_cog(RoleCommands())

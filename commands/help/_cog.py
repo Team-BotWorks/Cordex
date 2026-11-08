@@ -35,5 +35,4 @@ class HelpCommand(Cog):
 
 
 async def setup(bot : Cordex) -> None:
-    cog = HelpCommand()
-    await bot.add_cog(cog)
+    await bot.add_cog(HelpCommand())

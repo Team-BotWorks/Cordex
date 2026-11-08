@@ -119,5 +119,4 @@ class Preview(Cog):
 
 
 async def setup(bot : Cordex) -> None:  # ruff: ignore[undocumented-public-function]
-    cog = Preview(bot)
-    await bot.add_cog(cog)
+    await bot.add_cog(Preview(bot))

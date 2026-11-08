@@ -137,5 +137,4 @@ class BotOwnerCommands(Cog):
 
 
 async def setup(bot : Cordex) -> None:
-    cog = BotOwnerCommands(bot)
-    await bot.add_cog(cog)
+    await bot.add_cog(BotOwnerCommands(bot))

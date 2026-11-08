@@ -105,5 +105,4 @@ class ChannelCommands(
 
 
 async def setup(bot : Cordex) -> None:
-    cog = ChannelCommands()
-    await bot.add_cog(cog)
+    await bot.add_cog(ChannelCommands())

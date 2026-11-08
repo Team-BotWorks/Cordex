@@ -191,5 +191,4 @@ class QuarantineEnforcer(Cog):
 
 
 async def setup(bot : Cordex) -> None:  # ruff: ignore[undocumented-public-function]
-    cog = QuarantineEnforcer(bot)
-    await bot.add_cog(cog)
+    await bot.add_cog(QuarantineEnforcer(bot))
