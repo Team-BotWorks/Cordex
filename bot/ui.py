@@ -92,7 +92,7 @@ class LayoutView(BaseLayoutView):
 
     @override
     async def interaction_check(self, _interaction : "Interaction") -> bool:
-        ...
+        return True
 
     def add_text(self, text : str, /) -> Self:
         self.add_item(TextDisplay(text))
