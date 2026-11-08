@@ -8,9 +8,7 @@ from discord.ext.tasks import loop
 
 from bot import Cordex, log
 from bot.types import GuildMessageableChannel
-from core.moderation import LockdownManager
-from core.moderation.cases import CasesManager
-from core.moderation.payloads import LockdownRemovePayload
+from core.moderation import CasesManager, LockdownManager, LockdownRemovePayload
 
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 # Lockdown Enforcing
@@ -84,11 +82,9 @@ class LockdownEnforcer(Cog):
         if not isinstance(channel, GuildMessageableChannel):
             return
 
-        if await LockdownManager(self.bot, guild).is_locked_down(channel):
-            await self.bot.db.execute(
-                t"DELETE FROM Lockdowns WHERE channel_id = {channel.id} AND guild_id = {guild.id}",
-            )
-            await self.bot.db.commit()
+        manager = LockdownManager(self.bot, guild)
+        if await manager.is_locked_down(channel):
+            await manager.remove(channel)
 
             await CasesManager(self.bot, guild).create_case(
                 LockdownRemovePayload(
