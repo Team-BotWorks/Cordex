@@ -374,30 +374,32 @@ class _ResetModal(Modal):
         self.view     = view
         self.category = category
 
-        self._options : dict[str, str] = (
-            {
-                "edit"    : "Edit Logging Channel",
-                "delete"  : "Delete Logging Channel",
-                "preview" : "Link Previews",
-            } if category == "Messages" else {
-                "logging"          : "Logging Channel",
-                "quarantine"       : "Quarantine Role",
-                "enforce_channels" : "Enforce Channels",
-                "enforce_roles"    : "Enforce Roles",
-            }
+        candidates = (
+            (
+                ("edit",    "Edit Logging Channel",   bool(view.edit_id)),
+                ("delete",  "Delete Logging Channel", bool(view.delete_id)),
+                ("preview", "Link Previews",          view.preview),
+            ) if category == "Messages" else (
+                ("logging",          "Logging Channel",  bool(view.logging_id)),
+                ("quarantine",       "Quarantine Role",  bool(view.quarantine_id)),
+                ("enforce_channels", "Enforce Channels", view.enforce_channels),
+                ("enforce_roles",    "Enforce Roles",    view.enforce_roles),
+            )
         )
 
-        self._selection = Select[Self](
-            placeholder = "Select what to reset...",
-            options     = [
-                *(SelectOption(label = label, value = key) for key, label in self._options.items()),
+        self._options = {key : label for key, label, configured in candidates if configured}
+
+        options = [SelectOption(label = label, value = key) for key, label in self._options.items()]
+        if len(options) > 1:
+            options.append(
                 SelectOption(
                     label       = f"All {category} Settings",
                     value       =  "all",
-                    description = f"Reset every {category.lower()} setting at once.",
+                    description = f"Reset every configured {category.lower()} setting at once.",
                 ),
-            ],
-        )
+            )
+
+        self._selection = Select[Self](placeholder = "Select what to reset...", options = options)
         self.selection  = Label[Self](
             text        =  "Setting",
             description = f"Choose which {category.lower()} setting to reset to its default.",
@@ -647,6 +649,9 @@ class _ConfigurationView(NamedPaginator):
                 f"{DENIED_EMOJI} **Quarantine Role Unset**\n"
                 f"Set one with the select below."
             )
+
+        self.messages_reset_button.disabled   = not (self.edit_id or self.delete_id or self.preview)
+        self.moderation_reset_button.disabled = not (self.logging_id or self.quarantine_id or self.enforce_channels or self.enforce_roles)
 
         self.pages = [
             PageData(
