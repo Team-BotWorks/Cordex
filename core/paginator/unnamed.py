@@ -27,7 +27,7 @@ from core.exceptions import (
     send_bad_operation,
     send_bad_request,
 )
-from core.responses import MessageType, format_send
+from core.responses import FormatOverride, MessageType, format_send
 
 __all__ = ["UnnamedPaginator"]
 
@@ -290,6 +290,7 @@ class UnnamedPaginator(LayoutView):
                 MessageType.warning,
                 title    = "Hey!",
                 subtitle = "This view isn't yours!",
+                override = FormatOverride(prefix = False),
             )
             return False
 

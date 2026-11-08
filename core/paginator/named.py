@@ -26,7 +26,7 @@ from bot.ui import (
     VisibleLargeSeparator,
 )
 from core.exceptions import DependentParameterError, send_bad_operation
-from core.responses import MessageType, format_send
+from core.responses import FormatOverride, MessageType, format_send
 
 __all__ = ["NamedPaginator", "PageData"]
 
@@ -188,6 +188,7 @@ class NamedPaginator(AutoTimeoutLayoutView):
                 MessageType.warning,
                 title    = "Hey!",
                 subtitle = "This view isn't yours!",
+                override = FormatOverride(prefix = False),
             )
             return False
 
