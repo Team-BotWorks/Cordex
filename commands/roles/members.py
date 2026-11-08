@@ -82,6 +82,7 @@ async def run_role_members(
         color     = role.color if role.color.value else COLOR_GREY,
         container = True,
     )
+    view.user    = interaction.user
     view.message = await interaction.followup.send(
         view             = view,
         ephemeral        = ephemeral,

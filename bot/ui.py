@@ -90,6 +90,10 @@ class LayoutView(BaseLayoutView):
         super().__init__(timeout = timeout)
         self.append_items(children)
 
+    @override
+    async def interaction_check(self, _interaction : "Interaction") -> bool:
+        ...
+
     def add_text(self, text : str, /) -> Self:
         self.add_item(TextDisplay(text))
         return self

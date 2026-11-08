@@ -5,7 +5,7 @@ from collections.abc import Sequence
 from typing import Self, final, override
 from warnings import warn
 
-from discord import ButtonStyle, Color, Message
+from discord import ButtonStyle, Color, Member, Message, User
 
 from bot import Interaction
 from bot.ui import (
@@ -27,6 +27,7 @@ from core.exceptions import (
     send_bad_operation,
     send_bad_request,
 )
+from core.responses import MessageType, format_send
 
 __all__ = ["UnnamedPaginator"]
 
@@ -242,7 +243,8 @@ class UnnamedPaginator(LayoutView):
         timeout   : int    | None = 600,
     ) -> None:
         super().__init__(timeout = timeout)
-        self.message : Message | None = None
+        self.message : Message       | None = None
+        self.user    : User | Member | None = None
 
         self._title     : str             = title
         self._data      : _ItemsOrStrList = data
@@ -275,6 +277,23 @@ class UnnamedPaginator(LayoutView):
         # ⸻ Render.
 
         self._render()
+
+    # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
+    # interaction_check
+    # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
+
+    @override
+    async def interaction_check(self, interaction : Interaction) -> bool:
+        if interaction.user != self.user:
+            await format_send(
+                interaction,
+                MessageType.warning,
+                title    = "Hey!",
+                subtitle = "This view isn't yours!",
+            )
+            return False
+
+        return True
 
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
     # on_timeout

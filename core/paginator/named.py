@@ -8,9 +8,11 @@ from warnings import warn
 from discord import (
     Color,
     Emoji,
+    Member,
     Message,
     PartialEmoji,
     SelectOption,
+    User,
 )
 
 from bot import Interaction
@@ -24,6 +26,7 @@ from bot.ui import (
     VisibleLargeSeparator,
 )
 from core.exceptions import DependentParameterError, send_bad_operation
+from core.responses import MessageType, format_send
 
 __all__ = ["NamedPaginator", "PageData"]
 
@@ -122,7 +125,8 @@ class NamedPaginator(AutoTimeoutLayoutView):
         timeout   : int   | None = 600,
     ) -> None:
         super().__init__(timeout = timeout)
-        self.message : Message | None = None
+        self.message : Message       | None = None
+        self.user    : User | Member | None = None
 
         self._data      : list[PageData] = data
         self._color     : Color | None   = color
@@ -171,6 +175,23 @@ class NamedPaginator(AutoTimeoutLayoutView):
 
         self._pages = value
         self._render()
+
+    # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
+    # interaction_check
+    # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
+
+    @override
+    async def interaction_check(self, interaction : Interaction) -> bool:
+        if interaction.user != self.user:
+            await format_send(
+                interaction,
+                MessageType.warning,
+                title    = "Hey!",
+                subtitle = "This view isn't yours!",
+            )
+            return False
+
+        return True
 
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
     # on_timeout
