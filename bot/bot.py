@@ -317,11 +317,16 @@ class Cordex(BaseBot):
         self.db = await connect(str(db_path))
         self.db.row_factory = Row
 
-        def read_schemas() -> list[str]:
-            return [schema.read_text(encoding = "utf-8") for schema in Path("schemas").glob("*.sql")]
+        def read_schemas() -> list[tuple[Path, str]]:
+            return [(schema, schema.read_text(encoding = "utf-8")) for schema in Path("schemas").glob("*.sql")]
 
-        for schema in await to_thread(read_schemas):
-            await self.db.executescript(schema)
+        for path, schema in await to_thread(read_schemas):
+            try:
+                await self.db.executescript(schema)
+            except Exception:
+                log.exception("Failed to execute schema %s", path)
+            else:
+                log.info("Executed schema '%s'", path)
 
         await self.db.commit()
 
@@ -356,7 +361,6 @@ class Cordex(BaseBot):
         for cog in cogs:
             try:
                 await self.load_extension(cog)
-                log.info("Loaded cog '%s'", cog)
             except ExtensionNotFound:
                 log.error("Failed to load cog %s; file was not found.", cog, exc_info = False)
             except ExtensionAlreadyLoaded:
@@ -367,6 +371,8 @@ class Cordex(BaseBot):
                 log.error("Failed to load cog %s: %s", cog, e.original, exc_info = False)
             except Exception:
                 log.exception("Failed to load cog %s", cog)
+            else:
+                log.info("Loaded cog '%s'", cog)
 
         # ⸻ Cache
 

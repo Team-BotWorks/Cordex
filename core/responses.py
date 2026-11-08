@@ -45,11 +45,11 @@ class MessageType(StrEnum):
     @property
     def prefix(self) -> str:
         """The prefix for this message type."""
-        if self == MessageType.success:
-            return "Successfully"
-        if self == MessageType.warning or MessageType.error:
-            return "Failed to"
-        return ""
+        match self:
+            case MessageType.success:
+                return "Successfully"
+            case MessageType.warning | MessageType.error:
+                return "Failed to"
 
 
 @final

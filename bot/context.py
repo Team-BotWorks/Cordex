@@ -209,19 +209,14 @@ class Context(BaseContext["Cordex"]):
         if len(output) < 2000:
             return await self.send(output)
 
-        module         = getattr(
+        module = getattr(
             target,
             "__module__",
             target.__name__ if isinstance(target, ModuleType) else "global",
         ).replace(".", "/")
-        qualified_name = getattr(
-            target,
-            "__qualname__",
-            "object" if not isinstance(target, ModuleType) else target.__name__.split(".")[-1],
-        )
-        content  = f"```{module}/{qualified_name}```"
+
         filename = f"{module.split('/')[-1]}.py"
-        return await self.send_file(content, file_content = ",\n".join(attributes), file_name = filename)
+        return await self.send_file(file_content = ",\n".join(attributes), file_name = filename)
 
     async def show_def(self, target : _InspectableObject, /) -> Message:
         if isinstance(target, property):
@@ -233,19 +228,17 @@ class Context(BaseContext["Cordex"]):
 
         source = getsource(target)
 
-        module         = getattr(
-            target,
-            "__module__",
-            target.__name__ if isinstance(target, ModuleType) else "global",
-        ).replace(".", "/")
-        qualified_name = getattr(
-            target,
-            "__qualname__",
-            "object" if not isinstance(target, ModuleType) else target.__name__.split(".")[-1],
-        )
+        is_module = isinstance(target, ModuleType)
+        module = getattr(target, "__module__", target.__name__ if is_module else "global").replace(".", "/")
+
+        if is_module:
+            directory = f"```{module}```"
+        else:
+            qualified_name = getattr(target, "__qualname__", "object")
+            directory = f"```{module}/{qualified_name}```"
 
         definition = (
-           f"```{module}/{qualified_name}```\n"
+           f"{directory}\n"
             "```py\n"
            f"{source}\n"
             "```"
@@ -254,9 +247,8 @@ class Context(BaseContext["Cordex"]):
         if len(definition) < 2000:
             return await self.send(definition)
 
-        content  = f"```{module}/{qualified_name}```"
         filename = f"{module.split('/')[-1]}.py"
-        return await self.send_file(content, file_content = source, file_name = filename)
+        return await self.send_file(directory, file_content = source, file_name = filename)
 
 
 class Tree(CommandTree):

@@ -61,8 +61,14 @@ async def run_role_members(
 
     # ⸻ Labels.
 
-    person_label = "Bots"   if person_filter == "Bots"   else ("Humans" if person_filter == "Humans" else "Members")
-    role_label   = "not in" if role_filter   == "Not In" else "in"
+    if person_filter == "Bots":
+        person_label = "Bot"
+    elif person_filter == "Humans":
+        person_label = "Human"
+    else:
+        person_label = "Member"
+
+    role_label = "not in" if role_filter == "Not In" else "in"
 
     mention = role.mention if not role.is_default() else "@everyone"
 
