@@ -182,7 +182,7 @@ class NamedPaginator(AutoTimeoutLayoutView):
 
     @override
     async def interaction_check(self, interaction : Interaction) -> bool:
-        if interaction.user != self.user:
+        if self.user is not None and interaction.user != self.user:
             await format_send(
                 interaction,
                 MessageType.warning,
@@ -200,7 +200,6 @@ class NamedPaginator(AutoTimeoutLayoutView):
 
     @override
     async def on_timeout(self) -> None:
-
         # ⸻ timeout without self.message.
 
         if self.timeout and not self.message:
