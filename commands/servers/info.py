@@ -26,7 +26,6 @@ from constants import (
     VERIFIED_SERVER_EMOJI,
     VOICE_EMOJI,
 )
-from core.exceptions import send_bad_operation
 from core.utilities import format_table
 
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
@@ -65,14 +64,8 @@ async def run_server_info(interaction : Interaction) -> None:
         return
 
     owner = guild.owner
-
     if not owner:
-        owner_id = guild.owner_id
-        if owner_id is not None:
-            owner = guild.get_member(owner_id) or await guild.fetch_member(owner_id)
-        else:
-            await send_bad_operation(interaction, subtitle = "Fetching the guild owner failed repeatedly")
-            return
+        return
 
     member_total = guild.member_count or 0
     bots         = sum(1 for member in guild.members if member.bot)

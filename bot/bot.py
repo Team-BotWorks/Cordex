@@ -359,20 +359,21 @@ class Cordex(BaseBot):
         cogs = sorted(seen)
 
         for cog in cogs:
+            cog_path = f"{cog.replace('.', '/')}.py"
             try:
                 await self.load_extension(cog)
             except ExtensionNotFound:
-                log.error("Failed to load cog %s; file was not found.", cog, exc_info = False)
+                log.error("Failed to load cog %s; file was not found.", cog_path, exc_info = False)
             except ExtensionAlreadyLoaded:
-                log.warning("Failed to load cog %s; cog is already loaded.", cog, exc_info = False)
+                log.warning("Failed to load cog %s; cog is already loaded.", cog_path, exc_info = False)
             except NoEntryPointError:
-                log.error("Failed to load cog %s; did you forget a setup function?", cog, exc_info = False)
+                log.error("Failed to load cog %s; did you forget a setup function?", cog_path, exc_info = False)
             except ExtensionFailed as e:
-                log.error("Failed to load cog %s: %s", cog, e.original, exc_info = False)
+                log.error("Failed to load cog %s: %s", cog_path, e.original, exc_info = False)
             except Exception:
-                log.exception("Failed to load cog %s", cog)
+                log.exception("Failed to load cog %s", cog_path)
             else:
-                log.info("Loaded cog '%s'", cog)
+                log.info("Loaded cog '%s'", cog_path)
 
         # ⸻ Cache
 

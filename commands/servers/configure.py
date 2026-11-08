@@ -1,8 +1,8 @@
 # pyright: reportIncompatibleMethodOverride = false
 
-from typing import Self, final, override
+from typing import Literal, Self, final, override
 
-from discord import ButtonStyle, ChannelType, Guild, Object, TextChannel
+from discord import ButtonStyle, ChannelType, Guild, Object, SelectOption, TextChannel
 
 from bot import Interaction
 from bot.ui import (
@@ -11,9 +11,11 @@ from bot.ui import (
     ButtonSection,
     ChannelSelect,
     Checkbox,
+    Confirmation,
     Label,
     Modal,
     RoleSelect,
+    Select,
     TextDisplay,
 )
 from constants import (
@@ -26,6 +28,7 @@ from constants import (
 from core.exceptions import send_bad_argument, send_bad_operation
 from core.moderation import QuarantineManager
 from core.paginator import NamedPaginator, PageData
+from core.responses import MessageType, format_message
 
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 # /server configure Logic
@@ -361,6 +364,139 @@ class _ModerationQuarantineEnforceButton(Button["_ConfigurationView"]):
 
 
 @final
+class _ResetModal(Modal):
+    def __init__(
+        self,
+        view     : _ConfigurationView,
+        category : Literal["Messages", "Moderation"],
+    ) -> None:
+        super().__init__(title = f"Reset {category}")
+        self.view     = view
+        self.category = category
+
+        self._options : dict[str, str] = (
+            {
+                "edit"    : "Edit Logging Channel",
+                "delete"  : "Delete Logging Channel",
+                "preview" : "Link Previews",
+            } if category == "Messages" else {
+                "logging"          : "Logging Channel",
+                "quarantine"       : "Quarantine Role",
+                "enforce_channels" : "Enforce Channels",
+                "enforce_roles"    : "Enforce Roles",
+            }
+        )
+
+        self._selection = Select[Self](
+            placeholder = "Select what to reset...",
+            options     = [
+                *(SelectOption(label = label, value = key) for key, label in self._options.items()),
+                SelectOption(
+                    label       = f"All {category} Settings",
+                    value       =  "all",
+                    description = f"Reset every {category.lower()} setting at once.",
+                ),
+            ],
+        )
+        self.selection  = Label[Self](
+            text        =  "Setting",
+            description = f"Choose which {category.lower()} setting to reset to its default.",
+            component   = self._selection,
+        )
+
+        self.add_item(self.selection)
+
+    @override
+    async def on_submit(self, interaction : Interaction) -> None:
+        guild = interaction.guild
+        if not guild:
+            return
+
+        view     = self.view
+        category = self.category
+        choice   = self._selection.values[0]
+
+        keys   = set(self._options) if choice == "all" else {choice}
+        target = f"all {category.lower()} settings" if choice == "all" else self._options[choice].lower()
+
+        async def accept(confirmation_interaction : Interaction) -> None:
+            await confirmation_interaction.response.defer()
+
+            config = confirmation_interaction.client.config(guild)
+
+            try:
+                if "edit" in keys:
+                    await config.set_messages_edit_logging_channel(None)
+                    view.edit_id                    = None
+                    view.edit_select.default_values = []
+                if "delete" in keys:
+                    await config.set_messages_delete_logging_channel(None)
+                    view.delete_id                    = None
+                    view.delete_select.default_values = []
+                if "preview" in keys:
+                    await config.set_whether_messages_preview(False)
+                    view.preview = False
+                if "logging" in keys:
+                    await config.set_moderation_logging_channel(None)
+                    view.logging_id                    = None
+                    view.logging_select.default_values = []
+                if "quarantine" in keys:
+                    await config.set_moderation_quarantine_role(None)
+                    view.quarantine_id                    = None
+                    view.quarantine_select.default_values = []
+                if "enforce_channels" in keys:
+                    await config.set_whether_moderation_quarantine_enforce_channels(False)
+                    view.enforce_channels = False
+                if "enforce_roles" in keys:
+                    await config.set_whether_moderation_quarantine_enforce_roles(False)
+                    view.enforce_roles = False
+            except Exception:
+                await send_bad_operation(confirmation_interaction, title = f"reset {target}")
+                raise
+            finally:
+                view.update_pages()
+                if view.message:
+                    await view.message.edit(view = view)
+
+            await confirmation_interaction.delete_original_response()
+
+        async def deny(confirmation_interaction : Interaction) -> None:
+            await confirmation_interaction.response.defer()
+            await confirmation_interaction.delete_original_response()
+
+        confirmation = Confirmation(
+            TextDisplay(
+                format_message(
+                    MessageType.warning,
+                    title    =  "Warning",
+                    subtitle = f"This will reset {target} to {"its" if choice != "all" else "their"} default state. This cannot be undone!",
+                ),
+            ),
+            acceptance_label = "Reset",
+            denial_label     = "Cancel",
+            on_acceptance    = accept,
+            on_denial        = deny,
+        )
+
+        await interaction.response.send_message(view = confirmation, ephemeral = True)
+        confirmation.message = await interaction.original_response()
+
+
+@final
+class _ResetButton(Button["_ConfigurationView"]):
+    def __init__(self, category : Literal["Messages", "Moderation"]) -> None:
+        super().__init__(label = "Reset", style = ButtonStyle.red)
+        self.category : Literal["Messages", "Moderation"] = category
+
+    @override
+    async def callback(self, interaction : Interaction) -> None:
+        if not self.view:
+            return
+
+        await interaction.response.send_modal(_ResetModal(self.view, self.category))
+
+
+@final
 class _ConfigurationView(NamedPaginator):
     def __init__(
         self,
@@ -383,12 +519,14 @@ class _ConfigurationView(NamedPaginator):
         self.enforce_roles    = enforce_roles
         self.preview          = preview
 
-        self.edit_select            = _MessagesEditSelect()
-        self.delete_select          = _MessagesDeleteSelect()
-        self.logging_select         = _ModerationLoggingSelect()
-        self.quarantine_select      = _ModerationQuarantineRoleSelect()
-        self.quarantine_enforce_btn = _ModerationQuarantineEnforceButton()
-        self.preview_button         = _MessagesPreviewButton(enabled = self.preview)
+        self.edit_select               = _MessagesEditSelect()
+        self.delete_select             = _MessagesDeleteSelect()
+        self.logging_select            = _ModerationLoggingSelect()
+        self.quarantine_select         = _ModerationQuarantineRoleSelect()
+        self.quarantine_enforce_button = _ModerationQuarantineEnforceButton()
+        self.preview_button            = _MessagesPreviewButton(enabled = self.preview)
+        self.messages_reset_button     = _ResetButton("Messages")
+        self.moderation_reset_button   = _ResetButton("Moderation")
 
         if self.edit_id:
             self.edit_select.default_values = [Object(id = self.edit_id)]
@@ -515,7 +653,7 @@ class _ConfigurationView(NamedPaginator):
                 emoji       = FORUM_EMOJI,
                 description = "Manage message edit and delete logging as well as message link previews.",
                 content     = [
-                    "# Messages",
+                    ButtonSection("# Messages", button = self.messages_reset_button),
                     TextDisplay(txt_edit),
                     ActionRow(self.edit_select),
                     TextDisplay(txt_delete),
@@ -528,10 +666,10 @@ class _ConfigurationView(NamedPaginator):
                 emoji       = MODERATION_EMOJI,
                 description = "Manage moderation logging and the quarantine role.",
                 content     = [
-                    "# Moderation",
+                    ButtonSection("# Moderation", button = self.moderation_reset_button),
                     TextDisplay(txt_logging),
                     ActionRow(self.logging_select),
-                    ButtonSection(txt_quarantine, button = self.quarantine_enforce_btn),
+                    ButtonSection(txt_quarantine, button = self.quarantine_enforce_button),
                     ActionRow(self.quarantine_select),
                 ],
             ),
