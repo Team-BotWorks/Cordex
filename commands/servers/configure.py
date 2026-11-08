@@ -28,7 +28,7 @@ from constants import (
 from core.exceptions import send_bad_argument, send_bad_operation
 from core.moderation import QuarantineManager
 from core.paginator import NamedPaginator, PageData
-from core.responses import MessageType, format_message
+from core.responses import FormatOverride, MessageType, format_message
 
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 # /server configure Logic
@@ -470,6 +470,7 @@ class _ResetModal(Modal):
                     MessageType.warning,
                     title    =  "Warning",
                     subtitle = f"This will reset {target} to {"its" if choice != "all" else "their"} default state. This cannot be undone!",
+                    override = FormatOverride(prefix = False),
                 ),
             ),
             acceptance_label = "Reset",
