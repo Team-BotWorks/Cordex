@@ -43,9 +43,7 @@ from discord.ui import LayoutView as BaseView
 from discord.ui import Modal as BaseModal
 from discord.ui import TextDisplay as BaseTextDisplay
 from discord.ui import TextInput as BaseTextInput
-from discord.ui import (
-    View as SimpleView,
-)
+from discord.ui import View as SimpleView
 
 from constants import ACCEPTED_NOBG_EMOJI, DENIED_NOBG_EMOJI
 
