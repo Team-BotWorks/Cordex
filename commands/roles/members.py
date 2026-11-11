@@ -75,8 +75,8 @@ async def run_role_members(
     # ⸻ Build the paginator.
 
     view = UnnamedPaginator(
-        f"### {person_label} {role_label} {mention}",
         [f"- {member.mention} | {member.id}" for member in filtered] if filtered else ["No members found."],
+        title     = f"### {person_label} {role_label} {mention}",
         footer    = Footer("Page {smallest_page} of {biggest_page} | {count} " + person_label + "{s}"),
         per_page  = 15,
         color     = role.color if role.color.value else COLOR_GREY,

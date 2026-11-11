@@ -460,8 +460,8 @@ async def run_server_commands(interaction : Interaction) -> None:
     state = _State(f"# {HORIZONTAL_SETTINGS} All Commands", commands)
 
     view = UnnamedPaginator(
-        state.title,
         _build_sections(interaction, state),
+        title     = state.title,
         footer    = Footer("Page {smallest_page} of {biggest_page} | {count} Command{s}"),
         container = True,
     )

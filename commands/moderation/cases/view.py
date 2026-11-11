@@ -46,8 +46,8 @@ async def run_moderation_cases_view(interaction : Interaction, case_id : int | N
     class CasePaginator(UnnamedPaginator):
         def __init__(self) -> None:
             super().__init__(
-                "# Server Cases",
                 [build_case_section(case, manager) for case in cases],
+                title     = "# Server Cases",
                 footer    = Footer("Page {smallest_page} of {biggest_page} | {count} Case{s}"),
                 per_page  = 10,
                 color     = COLOR_GREY,

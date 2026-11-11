@@ -350,8 +350,8 @@ class Actions:
         class LockdownPaginator(UnnamedPaginator):
             def __init__(self) -> None:
                 super().__init__(
-                    "# Server Lockdowns",
                     entries,
+                    title     = "# Server Lockdowns",
                     footer    = Footer("Page {smallest_page} of {biggest_page} | {count} Lockdown{s}"),
                     per_page  = 10,
                     color     = COLOR_GREY,
@@ -475,7 +475,6 @@ class Actions:
         class BanPaginator(UnnamedPaginator):
             def __init__(self) -> None:
                 super().__init__(
-                    "# Server Bans",
                     [
                         *[
                             (
@@ -494,6 +493,7 @@ class Actions:
                             ) for case in api_cases
                         ],
                     ],
+                    title     = "# Server Bans",
                     footer    = Footer("Page {smallest_page} of {biggest_page} | {count} Ban{s}"),
                     per_page  = 10,
                     color     = COLOR_BLACK,
@@ -660,7 +660,6 @@ class Actions:
         class QuarantinePaginator(UnnamedPaginator):
             def __init__(self) -> None:
                 super().__init__(
-                    "# Server Quarantines",
                     [
                         (
                             f"**{case.target.mention if case.target else "Unknown Member"} | {case.moderator.mention}**\n"
@@ -669,6 +668,7 @@ class Actions:
                             f"-# Case ID: #{case.id}"
                         ) for case in cases
                     ],
+                    title     = "# Server Lockdowns",
                     footer    = Footer("Page {smallest_page} of {biggest_page} | {count} Quarantine{s}"),
                     per_page  = 10,
                     color     = COLOR_ORANGE,
@@ -807,7 +807,6 @@ class Actions:
         class TimeoutPaginator(UnnamedPaginator):
             def __init__(self) -> None:
                 super().__init__(
-                    "# Server Timeouts",
                     [
                         *[
                             (
@@ -826,6 +825,7 @@ class Actions:
                             ) for member in api_members
                         ],
                     ],
+                    title     = "# Server Timeouts",
                     footer    = Footer("Page {smallest_page} of {biggest_page} | {count} Timeout{s}"),
                     per_page  = 10,
                     color     = COLOR_YELLOW,

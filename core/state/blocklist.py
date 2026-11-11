@@ -154,8 +154,8 @@ class BlocklistManager:
         class BlocklistPaginator(UnnamedPaginator):
             def __init__(self) -> None:
                 super().__init__(
-                    "# Blocklist",
                     blocklist,
+                    title     = "# Blocklist",
                     footer    = Footer("Page {smallest_page} of {biggest_page} | {count} Block{s}"),
                     per_page  = 15,
                     color     = COLOR_BLACK,

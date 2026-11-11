@@ -171,8 +171,8 @@ async def run_moderation_cases_query(
     class CasePaginator(UnnamedPaginator):
         def __init__(self) -> None:
             super().__init__(
-                "# Cases Found",
                 [build_case_section(case, manager) for case in cases],
+                title     = "# Cases Found",
                 footer    = Footer("Page {smallest_page} of {biggest_page} | {count} Case{s}"),
                 per_page  = 10,
                 color     = COLOR_GREY,
