@@ -141,7 +141,7 @@ async def run_channel_info(interaction : Interaction, channel : GuildChannel | T
     if topic:
         sections.append(
             "**Description**\n"
-           f"{topic}",
+           f">>> {topic}",
         )
 
     if thread_target:
@@ -199,11 +199,8 @@ async def run_channel_info(interaction : Interaction, channel : GuildChannel | T
             info["User Limit"] = str(target.user_limit) if target.user_limit else "Unlimited"
             info["Bitrate"]    = f"{target.bitrate // 1000} kbps"
 
-            sections.extend(
-                section for section in (
-                    _member_section("Member", target.members),
-                ) if section
-            )
+            if member_section := _member_section("Member", target.members):
+                sections.append(member_section)
         elif isinstance(target, StageChannel):
             info["User Limit"] = str(target.user_limit) if target.user_limit else "Unlimited"
             info["Bitrate"]    = f"{target.bitrate // 1000} kbps"

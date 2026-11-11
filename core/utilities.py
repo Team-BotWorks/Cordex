@@ -161,7 +161,7 @@ def format_table[K, V](table : dict[K, V], /, *, padding : int = 1) -> str:
         raise ValueError(error)
 
     width = max(len(str(key)) for key in table) + padding
-    return "\n".join(f"{key!s:>{width}}: {value}" for key, value in table.items())
+    return "\n".join(f"`{key!s:>{width}}`: {value}" for key, value in table.items())
 
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 # format_values
