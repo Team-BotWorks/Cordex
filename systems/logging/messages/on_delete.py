@@ -34,23 +34,15 @@ class MessageDeleteLogging(Cog):
         channel     = message.channel
         guild       = message.guild
 
-        # ⸻ Block bots and the bot itself.
-
-        if author.bot or author == self.bot.user:
+        if author.bot:
             return
-
-        # ⸻ Block non-guild messages.
 
         if not guild or not isinstance(channel, GuildMessageable):
             return
 
-        # ⸻ Block messages that do not belong to the current guild context.
-
         log_channel = await self.bot.config(guild).get_messages_delete_logging_channel()
         if log_channel is None or not log_channel.permissions_for(guild.me).send_messages:
             return
-
-        # ⸻ Block evaluations.
 
         if content.startswith(".eval") and is_bot_owner(author):
             return

@@ -3,6 +3,7 @@ from typing import Self, final
 
 from discord import (
     AllowedMentions,
+    CategoryChannel,
     ForumChannel,
     Member,
     StageChannel,
@@ -14,7 +15,6 @@ from discord.abc import GuildChannel
 from discord.utils import format_dt
 
 from bot import Interaction
-from bot.types import GuildMessageable
 from bot.ui import Container, LayoutView, TextDisplay
 from constants import (
     ACTIVE_LOCKED_STAGE_EMOJI,
@@ -22,6 +22,7 @@ from constants import (
     ACTIVE_STAGE_EMOJI,
     ACTIVE_VOICE_EMOJI,
     ANNOUNCEMENT_EMOJI,
+    CATEGORY_EMOJI,
     COLOR_GREY,
     FORUM_EMOJI,
     LOCKED_ANNOUNCEMENT_EMOJI,
@@ -50,41 +51,29 @@ def _is_private(target : GuildChannel) -> bool:
 
 
 def _get_channel_emoji(target : GuildChannel) -> str | None:
-    # ⸻ target is the rules channel.
-
     if target.guild.rules_channel and target == target.guild.rules_channel:
         return RULES_EMOJI
 
     private = _is_private(target)
 
-    # ⸻ target is a StageChannel.
-
     if isinstance(target, StageChannel):
         if len(target.members) > 0:
             return ACTIVE_LOCKED_STAGE_EMOJI if private else ACTIVE_STAGE_EMOJI
         return LOCKED_STAGE_EMOJI if private else STAGE_EMOJI
-
-    # ⸻ target is a VoiceChannel.
-
     if isinstance(target, VoiceChannel):
         if len(target.members) > 0:
             return ACTIVE_LOCKED_VOICE_EMOJI if private else ACTIVE_VOICE_EMOJI
         return LOCKED_VOICE_EMOJI if private else VOICE_EMOJI
-
-    # ⸻ target is a ForumChannel or media channel.
-
     if isinstance(target, ForumChannel):
         if target.is_media():
             return LOCKED_MEDIA_EMOJI if private else MEDIA_EMOJI
         return LOCKED_FORUM_EMOJI if private else FORUM_EMOJI
-
-    # ⸻ target is a TextChannel or announcement channel.
-
     if isinstance(target, TextChannel):
         if target.is_news():
             return LOCKED_ANNOUNCEMENT_EMOJI if private else ANNOUNCEMENT_EMOJI
         return LOCKED_TEXT_EMOJI if private else TEXT_EMOJI
-
+    if isinstance(target, CategoryChannel):
+        return CATEGORY_EMOJI
     return None
 
 
@@ -106,7 +95,7 @@ def _member_section(title : str, members : Sequence[Member]) -> str | None:
     )
 
 
-async def run_channel_info(interaction : Interaction, channel : GuildMessageable | None = None) -> None:
+async def run_channel_info(interaction : Interaction, channel : GuildChannel | Thread | None = None) -> None:
     """
     View information for a channel.
 
@@ -114,16 +103,16 @@ async def run_channel_info(interaction : Interaction, channel : GuildMessageable
     ----------
     interaction : `Interaction`
         The interaction context to run the command with.
-    channel : `GuildMessageable | None = None`
+    channel : `GuildChannel | None = None`
         The channel to view information for. Defaults to the current one.
     """
     await interaction.response.defer()
 
+    if not interaction.guild or not isinstance(interaction.channel, GuildChannel | Thread):
+        return
+
     target = channel or interaction.channel
     thread_target : Thread | None = None
-
-    if not interaction.guild or not isinstance(target, GuildMessageable):
-        return
 
     if isinstance(target, Thread):
         thread_target = target
@@ -131,8 +120,6 @@ async def run_channel_info(interaction : Interaction, channel : GuildMessageable
 
     if not isinstance(target, GuildChannel):
         return
-
-    # ⸻ Channel emoji.
 
     channel_type_emoji = _get_channel_emoji(target)
 
@@ -145,8 +132,8 @@ async def run_channel_info(interaction : Interaction, channel : GuildMessageable
         emoji_display = f"| {channel_type_emoji} " if channel_type_emoji else ""
         header_text   = f"### {target.mention} {emoji_display}| {target.id}"
 
-    nsfw  = target.nsfw
-    topic = target.topic if isinstance(target, TextChannel | StageChannel | ForumChannel) else None
+    nsfw  = target.nsfw  if isinstance(target, TextChannel | VoiceChannel | StageChannel | ForumChannel) else False
+    topic = target.topic if isinstance(target, TextChannel | StageChannel | ForumChannel)                else None
 
     info     : dict[str, str]
     sections : list[str] = []
@@ -179,6 +166,20 @@ async def run_channel_info(interaction : Interaction, channel : GuildMessageable
 
         if thread_target.applied_tags:
             info["Tags"] = ", ".join(tag.name for tag in thread_target.applied_tags)
+    elif isinstance(target, CategoryChannel):
+        info = {
+            "Channels"   : str(len(target.channels)),
+            "Created at" : f"{format_dt(target.created_at, style = "F")} | {format_dt(target.created_at, style = "R")}",
+        }
+
+        if target.channels:
+            channel_list = "\n".join(f"{_get_channel_emoji(channel)} {channel.name} | {channel.id}" for channel in target.channels[:20])
+            if len(target.channels) > 20:
+                channel_list += f"\n(+{len(target.channels) - 20} more)"
+            sections.append(
+                f"**Channels**\n"
+                f"{codeblock(channel_list, language = None)}",
+            )
     else:
         category = f"{target.category.name} | {target.category.id}" if target.category else "None"
 
@@ -190,6 +191,10 @@ async def run_channel_info(interaction : Interaction, channel : GuildMessageable
 
         if isinstance(target, TextChannel):
             info["Slowmode"] = f"{target.slowmode_delay} seconds" if target.slowmode_delay else "Off"
+        elif isinstance(target, ForumChannel):
+            info["Slowmode"] = f"{target.slowmode_delay} seconds" if target.slowmode_delay else "Off"
+            if target.available_tags:
+                info["Tags"] = ", ".join(tag.name for tag in target.available_tags)
         elif isinstance(target, VoiceChannel):
             info["User Limit"] = str(target.user_limit) if target.user_limit else "Unlimited"
             info["Bitrate"]    = f"{target.bitrate // 1000} kbps"

@@ -36,11 +36,13 @@ class MessageType(StrEnum):
     @property
     def emoji(self) -> str:
         """The emoji for this message type."""
-        return {
-            MessageType.success : ACCEPTED_EMOJI,
-            MessageType.warning : WARNING_EMOJI,
-            MessageType.error   : DENIED_EMOJI,
-        }[self]
+        match self:
+            case MessageType.success:
+                return ACCEPTED_EMOJI
+            case MessageType.warning:
+                return WARNING_EMOJI
+            case MessageType.error:
+                return DENIED_EMOJI
 
     @property
     def prefix(self) -> str:

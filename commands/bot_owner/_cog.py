@@ -42,10 +42,7 @@ class BotOwnerCommands(Cog):
     @Cog.listener("on_message_edit")
     async def listener_messageedit(self, before : Message, after : Message) -> None:
         author = before.author
-
-        # ⸻ Block bots and the bot itself.
-
-        if author.bot or author == self.bot.user:
+        if author.bot:
             return
 
         # ⸻ Process eval command edit.

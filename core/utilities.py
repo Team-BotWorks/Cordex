@@ -98,33 +98,34 @@ def format_command(path : str, /) -> str:
     -------
     `str`
         The formatted command.
+
+    Raises
+    ------
+    ValueError
+        `path` is empty.
     """
-    parts : list[str] = path.strip().split()
-
+    parts = path.strip().split()
     if not parts:
-        return "`Invalid Command`"
+        error = "path string cannot be empty"
+        raise ValueError(error)
 
-    root_name : str        = parts[0]
-    root_id   : int | None = None
+    root_name = parts[0]
+    root_id   = None
 
     commands = cordex.get_api_commands_cache()
-
     for command in commands:
         if command.name == root_name:
             root_id = command.id
             break
 
-    if not root_id:
-        return f"`/{path}`"
-
-    return f"</{path}:{root_id}>"
+    return f"</{path}:{root_id}>" if root_id else f"`/{path}`"
 
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 # format_table
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
 
-def format_table[K, V](table : dict[K, V], /, *, padding : int = 1, code : bool = False) -> str:
+def format_table[K, V](table : dict[K, V], /, *, padding : int = 1) -> str:
     """
     Format a dictionary into a table.
 
@@ -136,26 +137,31 @@ def format_table[K, V](table : dict[K, V], /, *, padding : int = 1, code : bool 
     *
     padding : `int = 1`
         The spacing to apply on the left side of the table.
-    code : `bool = False`
-        Whether the entire table should be in a codeblock.
 
     Returns
     -------
     `str`
         The formatted table.
+
+    Raises
+    ------
+    ValueError
+        - `table` is empty.
+        - `table` contains newlines in any of the keys or values.
     """
-    biggest_key = max([len(str(key)) for key in table], default = 0)
-    width       = biggest_key + padding
+    if not table:
+        error = "table dictionary cannot be empty"
+        raise ValueError(error)
 
-    rows = [
-        f"{key!s:>{width}}: {value}"
-        if code else
-        f"`{key!s:>{width}}:` {value}"
-        for key, value in table.items()
-    ]
+    if (
+        any("\n" in key   for key   in table          if isinstance(key, str)) or
+        any("\n" in value for value in table.values() if isinstance(value, str))
+    ):
+        error = "table dictionary cannot contain newlines"
+        raise ValueError(error)
 
-    output = "\n".join(rows)
-    return codeblock(output) if code else output
+    width = max(len(str(key)) for key in table) + padding
+    return "\n".join(f"{key!s:>{width}}: {value}" for key, value in table.items())
 
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 # format_values

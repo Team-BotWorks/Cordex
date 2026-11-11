@@ -60,9 +60,7 @@ class Preview(Cog):
         author  = message.author
         guild   = message.guild
 
-        # ⸻ Block bots and the bot itself.
-
-        if author.bot or author == self.bot.user:
+        if author.bot:
             return
 
         if guild:

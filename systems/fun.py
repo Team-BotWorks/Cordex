@@ -81,9 +81,7 @@ class Fun(Cog):
         reference = message.reference
         author    = message.author
 
-        # ⸻ Block bots and the bot itself.
-
-        if author.bot or author == self.bot.user:
+        if author.bot:
             return
 
         # ⸻ Replies.

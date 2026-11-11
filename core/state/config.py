@@ -37,13 +37,13 @@ class Config:
     # get_command_allowed
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
-    async def get_command_allowed(self, command_name : str, /) -> list[Role | Member]:
+    async def get_command_allowed(self, name : str, /) -> list[Role | Member]:
         """
         Get the roles/members allowed to use a certain command.
 
         Parameters
         ----------
-        command_name : `str`
+        name : `str`
             The command to get the allowed roles/members for.
         /
 
@@ -52,7 +52,7 @@ class Config:
         `list[Role | Member]`
             The roles/members allowed to use the command.
         """
-        restriction = self.bot.get_command_restriction(self.guild, command_name)
+        restriction = self.bot.get_command_restriction(self.guild, name)
         if not restriction:
             return []
 
@@ -65,13 +65,13 @@ class Config:
     # set_command_allowed
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
-    async def set_command_allowed(self, command_name : str, allowed : Sequence[Role | Member], /) -> None:
+    async def set_command_allowed(self, name : str, allowed : Sequence[Role | Member], /) -> None:
         """
         Set the roles/members allowed to use a certain command.
 
         Parameters
         ----------
-        command_name : `str`
+        name : `str`
             The command to set the allowed roles/members for.
         allowed : `Sequence[Role | Member]`
             The roles/members allowed to use the command.
@@ -82,17 +82,17 @@ class Config:
 
         try:
             await self.bot.db.execute(
-                t"DELETE FROM CommandRestrictions WHERE guild_id = {self.guild.id} AND command_name = {command_name}",
+                t"DELETE FROM CommandRestrictions WHERE guild_id = {self.guild.id} AND command_name = {name}",
             )
 
             for role_id in role_ids:
                 await self.bot.db.execute(
-                    t"INSERT INTO CommandRestrictions (guild_id, command_name, target_type, target_id) VALUES ({self.guild.id}, {command_name}, 'role', {role_id})",
+                    t"INSERT INTO CommandRestrictions (guild_id, command_name, target_type, target_id) VALUES ({self.guild.id}, {name}, 'role', {role_id})",
                 )
 
             for user_id in user_ids:
                 await self.bot.db.execute(
-                    t"INSERT INTO CommandRestrictions (guild_id, command_name, target_type, target_id) VALUES ({self.guild.id}, {command_name}, 'user', {user_id})",
+                    t"INSERT INTO CommandRestrictions (guild_id, command_name, target_type, target_id) VALUES ({self.guild.id}, {name}, 'user', {user_id})",
                 )
 
             await self.bot.db.commit()
@@ -102,7 +102,7 @@ class Config:
 
         self.bot.set_command_restriction(
             self.guild,
-            command_name,
+            name,
             Restriction(user_ids, role_ids) if (role_ids or user_ids) else None,
         )
 

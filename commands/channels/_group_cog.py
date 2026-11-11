@@ -1,5 +1,7 @@
 from typing import final
 
+from discord import Thread
+from discord.abc import GuildChannel
 from discord.app_commands import (
     Choice,
     allowed_installs,
@@ -12,7 +14,7 @@ from discord.app_commands import (
 from discord.ext.commands import GroupCog
 
 from bot import Cordex, Interaction
-from bot.types import GuildMessageable, GuildMessageableChannel
+from bot.types import GuildMessageableChannel
 from core.state import requires_restriction
 from core.utilities import unimplemented
 
@@ -70,7 +72,7 @@ class ChannelCommands(
     async def cmd_channel_info(
         self,
         interaction : Interaction,
-        channel     : GuildMessageable | None = None,
+        channel     : GuildChannel | Thread | None = None,
     ) -> None:
         await run_channel_info(interaction, channel)
 

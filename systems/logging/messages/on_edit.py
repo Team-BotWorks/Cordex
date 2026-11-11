@@ -46,9 +46,7 @@ class MessageEditLogging(Cog):
         after_content     = after.content
         after_attachments = after.attachments
 
-        # ⸻ Block bots and the bot itself.
-
-        if author.bot or author == self.bot.user:
+        if author.bot:
             return
 
         # ⸻ Block non-guild messages.
