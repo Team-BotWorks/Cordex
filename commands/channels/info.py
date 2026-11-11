@@ -81,14 +81,9 @@ def _member_section(title : str, members : Sequence[Member]) -> str | None:
     if not members:
         return None
 
-    shown     = "\n".join(f"{member.name} | {member.id}" for member in members)
-    remaining = len(members) - 20
-    listing   = (
-        f"{shown}\n"
-        f"(+{remaining} more)" if remaining > 0 else shown
-    )
-
+    listing = "\n".join(f"{member.name} | {member.id}" for member in members)
     s = "s" if len(members) > 1 else ""
+
     return (
         f"**{len(members)} {title}{s}**\n"
         f"{codeblock(listing, language = None)}"
@@ -173,12 +168,10 @@ async def run_channel_info(interaction : Interaction, channel : GuildChannel | T
         }
 
         if target.channels:
-            channel_list = "\n".join(f"{_get_channel_emoji(channel)} {channel.name} | {channel.id}" for channel in target.channels[:20])
-            if len(target.channels) > 20:
-                channel_list += f"\n(+{len(target.channels) - 20} more)"
+            channel_list = "\n".join(f"{_get_channel_emoji(channel)} {channel.mention} | {channel.id}" for channel in target.channels)
             sections.append(
                 f"**Channels**\n"
-                f"{codeblock(channel_list, language = None)}",
+                f"{channel_list}",
             )
     else:
         category = f"{target.category.name} | {target.category.id}" if target.category else "None"
