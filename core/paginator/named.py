@@ -8,25 +8,22 @@ from warnings import warn
 from discord import (
     Color,
     Emoji,
-    Member,
-    Message,
     PartialEmoji,
     SelectOption,
-    User,
 )
 
 from bot import Interaction
+from bot.types import NOT_PASSED
 from bot.ui import (
     ActionRow,
-    AutoTimeoutLayoutView,
     Container,
+    InteractiveView,
     Item,
     Select,
     TextDisplay,
     VisibleLargeSeparator,
 )
 from core.exceptions import DependentParameterError, send_bad_operation
-from core.responses import FormatOverride, MessageType, format_send
 
 __all__ = ["NamedPaginator", "PageData"]
 
@@ -87,7 +84,7 @@ class _PageSelect(Select["NamedPaginator"]):
         await self.paginator._turn(interaction, int(self.values[0]))
 
 
-class NamedPaginator(AutoTimeoutLayoutView):
+class NamedPaginator(InteractiveView):
     """
     Paginate a list of pages cleanly using a select dropdown.
 
@@ -119,19 +116,17 @@ class NamedPaginator(AutoTimeoutLayoutView):
         data      : list[PageData],
         /,
         *,
-        color     : Color | None = None,
-        container : bool         = False,
-        force     : bool         = False,
-        timeout   : int   | None = 600,
+        color     : Color            | None = None,
+        container : bool                    = False,
+        force     : bool                    = False,
+        timeout   : int | NOT_PASSED | None = NOT_PASSED,
     ) -> None:
-        super().__init__(timeout = timeout)
-        self.message : Message       | None = None
-        self.user    : User | Member | None = None
-
+        super().__init__(timeout = timeout if timeout is not NOT_PASSED else 600)
         self._data      : list[PageData] = data
-        self._color     : Color | None   = color
-        self._container : bool           = container
-        self._force     : bool           = force
+        self._color     : Color            | None = color
+        self._container : bool                    = container
+        self._force     : bool                    = force
+        self._timeout   : int | NOT_PASSED | None = timeout
 
         # ⸻ data must contain more than one page.
 
@@ -177,24 +172,6 @@ class NamedPaginator(AutoTimeoutLayoutView):
         self._render()
 
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
-    # interaction_check
-    # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
-
-    @override
-    async def interaction_check(self, interaction : Interaction) -> bool:
-        if self.user is not None and interaction.user != self.user:
-            await format_send(
-                interaction,
-                MessageType.warning,
-                title    = "Hey!",
-                subtitle = "This view isn't yours!",
-                override = FormatOverride(prefix = False),
-            )
-            return False
-
-        return True
-
-    # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
     # on_timeout
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
@@ -202,7 +179,7 @@ class NamedPaginator(AutoTimeoutLayoutView):
     async def on_timeout(self) -> None:
         # ⸻ timeout without self.message.
 
-        if self.timeout and not self.message:
+        if self._timeout is not NOT_PASSED and not self.message:
             warn(
                 "timeout was passed but there is no message to edit.",
                 category   = UserWarning,

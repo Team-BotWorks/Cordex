@@ -3,7 +3,7 @@ from typing import Self, final
 from discord import AllowedMentions, Role
 
 from bot import Interaction
-from bot.ui import Container, LayoutView, TextDisplay, VisibleLargeSeparator
+from bot.ui import Container, TextDisplay, View, VisibleLargeSeparator
 from constants import COLOR_GREY
 from core.exceptions import send_bad_argument
 
@@ -48,7 +48,7 @@ async def run_role_compare(
     # ⸻ Build the view.
 
     @final
-    class CompareView(LayoutView):
+    class CompareView(View):
         if not diffs_role_1:
             container = Container[Self](
                 TextDisplay(f"### Permission Differences for {role_1.mention} and {role_2.mention}"),

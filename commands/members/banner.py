@@ -3,7 +3,7 @@ from typing import Self, final
 from discord import AllowedMentions, MediaGalleryItem, Member
 
 from bot import Interaction
-from bot.ui import Container, LayoutView, MediaGallery, TextDisplay
+from bot.ui import Container, MediaGallery, TextDisplay, View
 from constants import COLOR_GREY
 from core.exceptions import send_bad_argument
 
@@ -64,7 +64,7 @@ async def run_member_banner(
         return
 
     @final
-    class BannerView(LayoutView):
+    class BannerView(View):
         container = Container[Self](
             TextDisplay(f"### {mention} Banner"),
             TextDisplay(f"View {name} banner [here]({banner.url})."),

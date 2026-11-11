@@ -4,7 +4,7 @@ from discord import AppCommandOptionType
 from discord.utils import get as utils_get
 
 from bot import Interaction
-from bot.ui import Container, LayoutView, TextDisplay, VisibleLargeSeparator
+from bot.ui import Container, TextDisplay, View, VisibleLargeSeparator
 from constants import REQUIRED_EMOJI
 from core.exceptions import send_bad_argument
 from core.help import HelpCommand, HelpParameter, get_command_help
@@ -47,7 +47,7 @@ def _build_parameter_sections(parameters : list[HelpParameter]) -> str:
 
 
 @final
-class _HelpView(LayoutView):
+class _HelpView(View):
     def __init__(self, command : HelpCommand) -> None:
         super().__init__()
         container = Container[Self](

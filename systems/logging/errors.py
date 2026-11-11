@@ -16,7 +16,7 @@ from discord.ext.commands import CommandError as PrefixCommandError
 from discord.ext.commands import CommandNotFound as PrefixCommandNotFound
 
 from bot import Context, ContextOrInteraction, Cordex, Interaction
-from bot.ui import Container, LayoutView, TextDisplay, VisibleLargeSeparator
+from bot.ui import Container, TextDisplay, View, VisibleLargeSeparator
 from constants import (
     BOT_ERRORS_LOG_CHANNEL_ID,
     BOTWORKS_MENTION,
@@ -78,7 +78,7 @@ class ErrorLogger(Cog):
         ):
             return
 
-        view = LayoutView()
+        view = View()
 
         container = Container[view](
             TextDisplay(

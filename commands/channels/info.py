@@ -15,7 +15,7 @@ from discord.abc import GuildChannel
 from discord.utils import format_dt
 
 from bot import Interaction
-from bot.ui import Container, LayoutView, TextDisplay
+from bot.ui import Container, TextDisplay, View
 from constants import (
     ACTIVE_LOCKED_STAGE_EMOJI,
     ACTIVE_LOCKED_VOICE_EMOJI,
@@ -125,7 +125,8 @@ async def run_channel_info(interaction : Interaction, channel : GuildChannel | T
         header_text   = f"### {thread_target.mention} {emoji_display}| {thread_target.id}"
     else:
         emoji_display = f"| {channel_type_emoji} " if channel_type_emoji else ""
-        header_text   = f"### {target.mention} {emoji_display}| {target.id}"
+        mention       = target.mention if not isinstance(target, CategoryChannel) else target.name
+        header_text   = f"### {mention} {emoji_display}| {target.id}"
 
     nsfw  = target.nsfw  if isinstance(target, TextChannel | VoiceChannel | StageChannel | ForumChannel) else False
     topic = target.topic if isinstance(target, TextChannel | StageChannel | ForumChannel)                else None
@@ -207,7 +208,7 @@ async def run_channel_info(interaction : Interaction, channel : GuildChannel | T
             )
 
     @final
-    class InfoView(LayoutView):
+    class InfoView(View):
         container = Container[Self](
             TextDisplay(header_text),
             TextDisplay(format_table(info)),

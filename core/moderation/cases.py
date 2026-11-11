@@ -19,10 +19,10 @@ from bot import Cordex, cordex, log
 from bot.types import GuildMessageable
 from bot.ui import (
     Container,
-    LayoutView,
     TextDisplay,
     Thumbnail,
     ThumbnailSection,
+    View,
     VisibleLargeSeparator,
 )
 from constants import (
@@ -386,7 +386,7 @@ class CasesManager:
 
         successful = True
 
-        view = LayoutView()
+        view = View()
         container = Container[view](TextDisplay(f"# {data.title} | #{new_case_id}"), color = data.color)
 
         # ⸻ Add the target information.

@@ -3,7 +3,7 @@ from typing import Literal, Self, final
 from discord import AllowedMentions, Role
 
 from bot import Interaction
-from bot.ui import Container, LayoutView, TextDisplay, VisibleLargeSeparator
+from bot.ui import Container, TextDisplay, View, VisibleLargeSeparator
 from constants import COLOR_GREY
 
 from ._base import format_permission
@@ -61,7 +61,7 @@ async def run_role_permissions(
     # ⸻ Build the view.
 
     @final
-    class PermissionsView(LayoutView):
+    class PermissionsView(View):
         container = Container[Self](
             TextDisplay(f"### {filter_mention}{p}ermissions for {role_mention}"),
             VisibleLargeSeparator(),

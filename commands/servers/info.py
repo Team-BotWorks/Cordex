@@ -6,11 +6,11 @@ from discord.utils import format_dt
 from bot import Interaction
 from bot.ui import (
     Container,
-    LayoutView,
     MediaGallery,
     TextDisplay,
     Thumbnail,
     ThumbnailSection,
+    View,
 )
 from constants import (
     BOOSTED_GLOBAL_SERVER_EMOJI,
@@ -116,7 +116,7 @@ async def run_server_info(interaction : Interaction) -> None:
     )
 
     @final
-    class InfoView(LayoutView):
+    class InfoView(View):
         container = Container[Self](
             TextDisplay(f"### {guild.name} {f"| {server_type_emoji} " if server_type_emoji else ""}| {guild.id}"),
             color = owner.color if owner.color.value else COLOR_GREY,

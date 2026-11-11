@@ -12,9 +12,9 @@ from discord.utils import format_dt
 from bot import Interaction
 from bot.ui import (
     ActionRow,
-    AutoTimeoutLayoutView,
     Button,
     Container,
+    InteractiveView,
     TextDisplay,
     Thumbnail,
     ThumbnailSection,
@@ -101,7 +101,7 @@ async def run_role_info(interaction : Interaction, role : Role) -> None:
             await run_role_members(interaction, role, ephemeral = True)
 
     @final
-    class InfoView(AutoTimeoutLayoutView):
+    class InfoView(InteractiveView):
         def __init__(self) -> None:
             super().__init__()
             self.message : Message | None = None
@@ -125,6 +125,7 @@ async def run_role_info(interaction : Interaction, role : Role) -> None:
             self.add_item(container)
 
     view = InfoView()
+    view.user = interaction.user
     view.message = await interaction.followup.send(
         view             = view,
         allowed_mentions = AllowedMentions.none(),

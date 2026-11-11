@@ -10,9 +10,9 @@ from bot import Cordex
 from bot.ui import (
     Container,
     File,
-    LayoutView,
     MediaGallery,
     TextDisplay,
+    View,
     VisibleLargeSeparator,
 )
 
@@ -24,7 +24,7 @@ MESSAGE_LINK_PATTERN = regex_compile(r"https://discord(?:app)?\.com/channels/(\d
 
 
 @final
-class _PreviewView(LayoutView):
+class _PreviewView(View):
     def __init__(self, message : Message, link : str, names : list[str]) -> None:
         super().__init__()
         container = Container[Self](TextDisplay(f"{message.author.mention}: {link}"), VisibleLargeSeparator())

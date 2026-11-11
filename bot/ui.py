@@ -9,10 +9,12 @@ from discord import (
     ButtonStyle,
     Color,
     HTTPException,
+    Member,
     Message,
     NotFound,
     SeparatorSpacing,
     TextStyle,
+    User,
 )
 from discord.ui import (
     ActionRow,
@@ -33,15 +35,17 @@ from discord.ui import (
     Separator,
     Thumbnail,
     UserSelect,
-    View,
     button,
     select,
 )
 from discord.ui import Container as BaseContainer
-from discord.ui import LayoutView as BaseLayoutView
+from discord.ui import LayoutView as BaseView
 from discord.ui import Modal as BaseModal
 from discord.ui import TextDisplay as BaseTextDisplay
 from discord.ui import TextInput as BaseTextInput
+from discord.ui import (
+    View as SimpleView,
+)
 
 from constants import ACCEPTED_NOBG_EMOJI, DENIED_NOBG_EMOJI
 
@@ -63,10 +67,10 @@ __all__ = [
     "Section",
     "Select",
     "Separator",
+    "SimpleView",
     "TextInput",
     "Thumbnail",
     "UserSelect",
-    "View",
     "button",
     "select",
 ]
@@ -81,12 +85,12 @@ if TYPE_CHECKING:
 type _OnChoice = Callable[[Interaction], Awaitable[None]]
 
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
-# LayoutView
+# View
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
 
-class LayoutView(BaseLayoutView):
-    def __init__(self, *children : Item[LayoutView | Self], timeout : float | None = 600) -> None:
+class View(BaseView):
+    def __init__(self, *children : Item[View | Self], timeout : float | None = 600) -> None:
         super().__init__(timeout = timeout)
         self.append_items(children)
 
@@ -98,10 +102,10 @@ class LayoutView(BaseLayoutView):
         self.add_item(TextDisplay(text))
         return self
 
-    def add_items(self, *items : Item[LayoutView | Self]) -> Self:
+    def add_items(self, *items : Item[View | Self]) -> Self:
         if len(items) == 1:
             warn(
-                "Prefer LayoutView.add_item over LayoutView.add_items if only one item is being added.",
+                "Prefer View.add_item over View.add_items if only one item is being added.",
                 category   = UserWarning,
                 stacklevel = 2,
             )
@@ -111,21 +115,22 @@ class LayoutView(BaseLayoutView):
 
         return self
 
-    def append_items(self, items : Iterable[Item[LayoutView | Self]], /) -> Self:
+    def append_items(self, items : Iterable[Item[View | Self]], /) -> Self:
         for item in items:
             self.add_item(item)
 
         return self
 
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
-# AutoTimeoutLayoutView
+# InteractiveView
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
 
-class AutoTimeoutLayoutView(LayoutView):
-    def __init__(self, *children : Item[LayoutView | Self], timeout : float | None = 600) -> None:
+class InteractiveView(View):
+    def __init__(self, *children : Item[View | Self], timeout : float | None = 600) -> None:
         super().__init__(*children, timeout = timeout)
-        self.message : Message | None = None
+        self.message : Message       | None = None
+        self.user    : User | Member | None = None
 
     async def _expire(self) -> None:
         for item in self.walk_children():
@@ -148,6 +153,22 @@ class AutoTimeoutLayoutView(LayoutView):
     @override
     async def on_timeout(self) -> None:
         await self._expire()
+
+    @override
+    async def interaction_check(self, interaction : "Interaction") -> bool:
+        from core.responses import FormatOverride, MessageType, format_send  # ruff: ignore[import-outside-top-level]
+
+        if self.user is not None and interaction.user != self.user:
+            await format_send(
+                interaction,
+                MessageType.warning,
+                title    = "Hey!",
+                subtitle = "This view isn't yours!",
+                override = FormatOverride(prefix = False),
+            )
+            return False
+
+        return True
 
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 # Confirmation
@@ -180,10 +201,10 @@ class _DenyButton(Button["Confirmation"]):
             await self.view.on_choice()
 
 
-class Confirmation(AutoTimeoutLayoutView):
+class Confirmation(InteractiveView):
     def __init__(
         self,
-        *children        : Item[LayoutView | Self],
+        *children        : Item[View | Self],
         timeout          : float | None = None,
         acceptance_label : str          = "Continue",
         denial_label     : str          = "Abort",
@@ -191,7 +212,6 @@ class Confirmation(AutoTimeoutLayoutView):
         on_denial        : _OnChoice,
     ) -> None:
         super().__init__(timeout = timeout)
-        self.message : Message | None = None
 
         self.acceptance_button : Button[Confirmation]    = _AcceptButton(acceptance_label, on_acceptance)
         self.denial_button     : Button[Confirmation]    = _DenyButton(denial_label, on_denial)
@@ -303,7 +323,7 @@ class Modal(BaseModal):
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
 
-class TextDisplay[V : LayoutView | Modal](BaseTextDisplay[V]):  # pyright: ignore[reportInvalidTypeArguments]
+class TextDisplay[V : View | Modal](BaseTextDisplay[V]):  # pyright: ignore[reportInvalidTypeArguments]
     def __init__(self, content : str, /) -> None:
         super().__init__(content)
 
@@ -312,7 +332,7 @@ class TextDisplay[V : LayoutView | Modal](BaseTextDisplay[V]):  # pyright: ignor
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
 
-class Container[V : LayoutView](BaseContainer[V]):
+class Container[V : View](BaseContainer[V]):
     def __init__(
         self,
         *children : Item[V],
@@ -406,25 +426,25 @@ _small = SeparatorSpacing.small
 
 
 @final
-class VisibleLargeSeparator[V : LayoutView](Separator[V]):
+class VisibleLargeSeparator[V : View](Separator[V]):
     def __init__(self) -> None:
         super().__init__(visible = True, spacing = _large)
 
 
 @final
-class VisibleSmallSeparator[V : LayoutView](Separator[V]):
+class VisibleSmallSeparator[V : View](Separator[V]):
     def __init__(self) -> None:
         super().__init__(visible = True, spacing = _small)
 
 
 @final
-class HiddenLargeSeparator[V : LayoutView](Separator[V]):
+class HiddenLargeSeparator[V : View](Separator[V]):
     def __init__(self) -> None:
         super().__init__(visible = False, spacing = _large)
 
 
 @final
-class HiddenSmallSeparator[V : LayoutView](Separator[V]):
+class HiddenSmallSeparator[V : View](Separator[V]):
     def __init__(self) -> None:
         super().__init__(visible = False, spacing = _small)
 
@@ -433,13 +453,13 @@ class HiddenSmallSeparator[V : LayoutView](Separator[V]):
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
 
-class ButtonSection[V : LayoutView](Section[V]):
+class ButtonSection[V : View](Section[V]):
     def __init__(self, *args : str | TextDisplay[V], button : Button[V]) -> None:
         super().__init__(*args, accessory = button)
         self.button : Button[V] = button
 
 
-class ThumbnailSection[V : LayoutView](Section[V]):
+class ThumbnailSection[V : View](Section[V]):
     def __init__(self, *args : str | TextDisplay[V], thumbnail : Thumbnail[V]) -> None:
         super().__init__(*args, accessory = thumbnail)
         self.thumbnail : Thumbnail[V] = thumbnail

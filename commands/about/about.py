@@ -4,7 +4,7 @@ from typing import Self, final
 from discord import __version__ as DISCORD_VERSION  # ruff: ignore[lowercase-imported-as-non-lowercase]
 
 from bot import Interaction
-from bot.ui import Container, LayoutView, TextDisplay, VisibleLargeSeparator
+from bot.ui import Container, TextDisplay, View, VisibleLargeSeparator
 from constants import COLOR_BLUE
 from core.utilities import format_table
 
@@ -30,7 +30,7 @@ async def run_about(interaction : Interaction) -> None:
     s = "s" if len(owners) > 1 else ""
 
     @final
-    class AboutView(LayoutView):
+    class AboutView(View):
         container = Container[Self](
             TextDisplay("# About Me,"),
             VisibleLargeSeparator(),

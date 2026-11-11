@@ -7,7 +7,7 @@ from discord.ext.commands import Cog
 
 from bot import Cordex
 from bot.types import GuildMessageable
-from bot.ui import Container, File, LayoutView, TextDisplay, VisibleLargeSeparator
+from bot.ui import Container, File, TextDisplay, View, VisibleLargeSeparator
 from constants import COLOR_RED
 from core.utilities import format_now, format_table, is_bot_owner
 
@@ -48,7 +48,7 @@ class MessageDeleteLogging(Cog):
             return
 
         @final
-        class DeleteView(LayoutView):
+        class DeleteView(View):
             container = Container[Self](
                 TextDisplay(f"# Message Deleted | {format_now("F")}"),
                 TextDisplay(

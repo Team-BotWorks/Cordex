@@ -13,10 +13,10 @@ from bot.ui import (
     Checkbox,
     Item,
     Label,
-    LayoutView,
     Modal,
     TextDisplay,
     TextInput,
+    View,
     VisibleLargeSeparator,
     button,
 )
@@ -67,11 +67,11 @@ class _ModerationModal(Modal):
         target       : Targetable,
         *,
         purge_target : Member           | None = None,
-        edit_view    : LayoutView       | None = None,
+        edit_view    : View             | None = None,
         state        : _ModerationModal | None = None,
     ) -> None:
-        self.edit_view    : LayoutView | None = edit_view
-        self.purge_target : Member     | None = purge_target
+        self.edit_view    : View   | None = edit_view
+        self.purge_target : Member | None = purge_target
 
         target_name = target.name
 
@@ -610,7 +610,7 @@ class _ModerationModal(Modal):
                     title    = f"The {modal.name} failed."
                     msg_type = MessageType.error
 
-                result_view = LayoutView()
+                result_view = View()
                 result_view.add_item(
                     TextDisplay(
                         format_message(
@@ -631,7 +631,7 @@ class _ModerationModal(Modal):
 
                 await interaction.edit_original_response(view = result_view)
 
-        class ModerationView(LayoutView):
+        class ModerationView(View):
             def __init__(self) -> None:
                 super().__init__()
                 self.add_items(

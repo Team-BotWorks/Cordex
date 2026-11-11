@@ -6,10 +6,10 @@ from discord.ext.commands import Cog
 from bot import Cordex
 from bot.ui import (
     Container,
-    LayoutView,
     TextDisplay,
     Thumbnail,
     ThumbnailSection,
+    View,
 )
 from constants import BOT_GUILD_LOG_CHANNEL_ID, COLOR_RED
 from core.utilities import format_now, format_table
@@ -43,7 +43,7 @@ class GuildRemoveLogging(Cog):
         )
 
         @final
-        class RemoveView(LayoutView):
+        class RemoveView(View):
             container = Container[Self](TextDisplay(f"# Left Guild | {format_now("F")}"), color = COLOR_RED)
 
             if guild.icon:

@@ -8,7 +8,7 @@ from discord import Enum, Forbidden, Guild, HTTPException, Message
 from discord.utils import escape_markdown, format_dt, utcnow
 
 from bot import Cordex, log
-from bot.ui import LayoutView, TextDisplay, VisibleLargeSeparator
+from bot.ui import TextDisplay, View, VisibleLargeSeparator
 from constants import COLOR_BLACK, COLOR_GREY, COLOR_ORANGE, COLOR_YELLOW, WARNING_EMOJI
 from core.paginator import Footer, UnnamedPaginator
 from core.utilities import format_now, format_table
@@ -239,14 +239,14 @@ class Actions:
             },
         )
 
-        view = LayoutView()
+        view = View()
         view.add_items(
-            TextDisplay[LayoutView](
+            TextDisplay[view](
                 f"{title}\n"
                 f"-# You were moderated at {format_now()}!\n",
             ),
-            VisibleLargeSeparator[LayoutView](),
-            TextDisplay[LayoutView](
+            VisibleLargeSeparator[view](),
+            TextDisplay[view](
                f"{moderation_table}\n"
                 "\n"
                f"{undone_at}",

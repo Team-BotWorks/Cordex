@@ -13,8 +13,8 @@ from bot.ui import (
     ButtonSection,
     Container,
     File,
-    LayoutView,
     TextDisplay,
+    View,
     VisibleLargeSeparator,
 )
 from constants import COLOR_GREY
@@ -77,7 +77,7 @@ class MessageEditLogging(Cog):
             return
 
         @final
-        class EditView(LayoutView):
+        class EditView(View):
             container = Container[Self](
                 TextDisplay(f"# Message Edited | {format_dt(after.edited_at or utcnow(), style = "F")}"),
                 ButtonSection(

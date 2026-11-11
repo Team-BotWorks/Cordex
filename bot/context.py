@@ -25,7 +25,7 @@ from core.state import (
     is_restriction_required,
 )
 
-from .ui import Button, LayoutView, Modal, View, button
+from .ui import Button, Modal, SimpleView, View, button
 
 type _InspectableObject = (
     ModuleType
@@ -166,7 +166,7 @@ class Context(BaseContext["Cordex"]):
     async def send_embed(self, embed : Embed, /) -> Message:
         return await self.send(embed = embed)
 
-    async def send_view(self, view : View | LayoutView, /) -> Message:
+    async def send_view(self, view : View | SimpleView, /) -> Message:
         return await self.send(view = view)
 
     async def send_modal(self, modal : Modal, /) -> Message:

@@ -5,17 +5,18 @@ from collections.abc import Sequence
 from typing import Self, final, override
 from warnings import warn
 
-from discord import ButtonStyle, Color, Member, Message, User
+from discord import ButtonStyle, Color
 
 from bot import Interaction
+from bot.types import NOT_PASSED
 from bot.ui import (
     ActionRow,
     Button,
     ButtonSection,
     Container,
+    InteractiveView,
     Item,
     Label,
-    LayoutView,
     Modal,
     TextDisplay,
     TextInput,
@@ -27,7 +28,6 @@ from core.exceptions import (
     send_bad_operation,
     send_bad_request,
 )
-from core.responses import FormatOverride, MessageType, format_send
 
 __all__ = ["UnnamedPaginator"]
 
@@ -198,18 +198,18 @@ class Footer:
         self.on_single   = f"-# {on_single}" if on_single is not None else None
 
 
-class UnnamedPaginator(LayoutView):
+class UnnamedPaginator(InteractiveView):
     """
     Paginate a list of data cleanly using <<, <, page jump, >, and >> buttons.
 
     Parameters
     ----------
-    title : `str`
-        The title of the paginator.
     data : ItemsOrStrList`
         The data to paginate.
     /
     *
+    title : `str`
+        The title of the paginator.
     footer : `Footer | None = None`
         The footer of the paginator.
     per_page : `int = 5`
@@ -231,28 +231,26 @@ class UnnamedPaginator(LayoutView):
 
     def __init__(
         self,
-        title     : str,
         data      : _ItemsOrStrList,
         /,
         *,
-        footer    : Footer | None = None,
-        per_page  : int           = 5,
-        color     : Color  | None = None,
-        container : bool          = False,
-        force     : bool          = False,
-        timeout   : int    | None = 600,
+        title     : str,
+        footer    : Footer           | None = None,
+        per_page  : int                     = 5,
+        color     : Color            | None = None,
+        container : bool                    = False,
+        force     : bool                    = False,
+        timeout   : int | NOT_PASSED | None = NOT_PASSED,
     ) -> None:
-        super().__init__(timeout = timeout)
-        self.message : Message       | None = None
-        self.user    : User | Member | None = None
-
-        self._title     : str             = title
-        self._data      : _ItemsOrStrList = data
-        self._footer    : Footer | None   = footer if footer is not None else Footer()
-        self._per_page  : int             = per_page
-        self._color     : Color  | None   = color
-        self._container : bool            = container
-        self._force     : bool            = force
+        super().__init__(timeout = timeout if timeout is not NOT_PASSED else 600)
+        self._data      : _ItemsOrStrList         = data
+        self._title     : str                     = title
+        self._footer    : Footer           | None = footer if footer is not None else Footer()
+        self._per_page  : int                     = per_page
+        self._color     : Color            | None = color
+        self._container : bool                    = container
+        self._force     : bool                    = force
+        self._timeout   : int | NOT_PASSED | None = timeout
 
         self.pages        : list[_ItemsOrStrList] = [
             data[i : i + per_page]
@@ -279,24 +277,6 @@ class UnnamedPaginator(LayoutView):
         self._render()
 
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
-    # interaction_check
-    # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
-
-    @override
-    async def interaction_check(self, interaction : Interaction) -> bool:
-        if self.user is not None and interaction.user != self.user:
-            await format_send(
-                interaction,
-                MessageType.warning,
-                title    = "Hey!",
-                subtitle = "This view isn't yours!",
-                override = FormatOverride(prefix = False),
-            )
-            return False
-
-        return True
-
-    # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
     # on_timeout
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
@@ -304,7 +284,7 @@ class UnnamedPaginator(LayoutView):
     async def on_timeout(self) -> None:
         # ⸻ timeout without self.message.
 
-        if self.timeout and not self.message:
+        if self._timeout is not NOT_PASSED and not self.message:
             warn(
                 "timeout was passed but there is no message to edit.",
                 category   = UserWarning,

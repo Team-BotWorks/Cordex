@@ -6,11 +6,11 @@ from discord.utils import escape_markdown, format_dt, utcnow
 from bot import Interaction
 from bot.ui import (
     Container,
-    LayoutView,
     MediaGallery,
     TextDisplay,
     Thumbnail,
     ThumbnailSection,
+    View,
 )
 from constants import (
     ASTERISK_EMOJI,
@@ -126,7 +126,7 @@ async def run_member_info(
     )
 
     @final
-    class InfoView(LayoutView):
+    class InfoView(View):
         container = Container[Self](
             TextDisplay(f"### {target.mention} {f"| {BIG_BOT_EMOJI} " if target.bot else ""}| {target.id}"),
             color = target.color if target.color.value else COLOR_GREY,

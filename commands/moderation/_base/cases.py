@@ -8,10 +8,10 @@ from bot.ui import (
     Button,
     ButtonSection,
     Container,
-    LayoutView,
     TextDisplay,
     Thumbnail,
     ThumbnailSection,
+    View,
     VisibleLargeSeparator,
 )
 from constants import COLOR_GREY
@@ -25,7 +25,7 @@ from core.utilities import format_table
 
 
 @final
-class _OpenCaseButton[V : LayoutView](Button[V]):
+class _OpenCaseButton[V : View](Button[V]):
     def __init__(self, manager : CasesManager, case_id : int) -> None:
         super().__init__(label = "View")
         self.manager = manager
@@ -68,12 +68,12 @@ def _format_summary(case : Case) -> str:
     return "\n".join(lines)
 
 
-def build_case_section[V : LayoutView](case : Case, manager : CasesManager) -> ButtonSection[V]:
+def build_case_section[V : View](case : Case, manager : CasesManager) -> ButtonSection[V]:
     return ButtonSection(_format_summary(case), button = _OpenCaseButton(manager, case.id))
 
 
-async def build_case_view(bot : Cordex, case : Case, manager : CasesManager) -> LayoutView:
-    view      = LayoutView()
+async def build_case_view(bot : Cordex, case : Case, manager : CasesManager) -> View:
+    view      = View()
     container = Container[view](TextDisplay(f"# {case.action_type.readable} | #{case.id}"), color = COLOR_GREY)
 
     sections : list[tuple[str, Member | User | None]] = [
