@@ -55,9 +55,9 @@ async def run_role_members(
         case "Both":
             filtered = list(source)
         case "Humans":
-            filtered = [m for m in source if not m.bot]
+            filtered = [member for member in source if not member.bot]
         case "Bots":
-            filtered = [m for m in source if m.bot]
+            filtered = [member for member in source if member.bot]
 
     # ⸻ Labels.
 
@@ -76,7 +76,7 @@ async def run_role_members(
 
     view = UnnamedPaginator(
         [f"- {member.mention} | {member.id}" for member in filtered] if filtered else ["No members found."],
-        title     = f"### {person_label} {role_label} {mention}",
+        title     = f"### {person_label}s {role_label} {mention}",
         footer    = Footer("Page {smallest_page} of {biggest_page} | {count} " + person_label + "{s}"),
         per_page  = 15,
         color     = role.color if role.color.value else COLOR_GREY,
