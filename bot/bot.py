@@ -24,7 +24,6 @@ from discord.ext.commands import (
 from discord.ext.commands import Context as BaseContext
 
 from constants import (
-    COLOR_BLACK,
     COLOR_WHITE,
     DEVELOPER_IDS,
     DisplayNameEffect,
@@ -260,8 +259,8 @@ class Cordex(BaseBot):
         styles = response.get("display_name_styles")
         if styles is None:
             return DisplayNameStyle(
-                font   = DisplayNameFont(11),
-                effect = DisplayNameEffect(1),
+                font   = DisplayNameFont.solid,
+                effect = DisplayNameEffect.gradient,
                 colors = [COLOR_WHITE],
             )
 
@@ -271,7 +270,7 @@ class Cordex(BaseBot):
             colors = [Color(color) for color in styles["colors"]],
         )
 
-    async def reset_name_style(self, guild : Guild, /, *, branded : bool = True) -> None:
+    async def reset_name_style(self, guild : Guild, /) -> None:
         """
         Reset the bot's display name style for this guild.
 
@@ -281,14 +280,12 @@ class Cordex(BaseBot):
             The guild to reset the display name style in.
         /
         *
-        branded : `bool = True`
-            Whether to reset the display name style using the branded types: `zilla_slab` font, `gradient` effect, `["FFFFFF", "000000"]` colors
         """
         await self.set_name_style(
             guild,
-            font   = DisplayNameFont.zilla_slab if branded else DisplayNameFont.default,
-            effect = DisplayNameEffect.gradient if branded else DisplayNameEffect.solid,
-            colors = [COLOR_WHITE, COLOR_BLACK] if branded else [COLOR_WHITE],
+            font   = DisplayNameFont.default,
+            effect = DisplayNameEffect.solid,
+            colors = [COLOR_WHITE],
         )
 
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
