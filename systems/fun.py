@@ -1,10 +1,12 @@
 from asyncio import sleep
+from datetime import UTC, date, datetime
 from secrets import choice, randbelow
-from typing import final
+from typing import final, override
 
-from discord import Member, Message, User
+from discord import CustomActivity, Member, Message, User
 from discord.app_commands import Command
 from discord.ext.commands import Cog
+from discord.ext.tasks import loop
 
 from bot import Cordex, Interaction
 from core.responses import FormatOverride, MessageType, PunctuationOverride, format_send
@@ -23,6 +25,45 @@ class Fun(Cog):
         self.bot = bot
 
         self.rejected_members : dict[Member | User, tuple[str, int]] = {}
+
+        self._loop_fun.start()
+
+    @override
+    async def cog_unload(self) -> None:
+        self._loop_fun.cancel()
+
+    @loop(minutes = 10)
+    async def _loop_fun(self) -> None:
+        today = datetime.now(UTC).date()
+        age = today.year - 2026
+
+        november_first_weekday = date(today.year, 11, 1).weekday()
+        thanksgiving_day = 22 + (3 - november_first_weekday) % 7
+
+        holidays = {
+            (2, 14)                :  "Happy Valentine's Day!",
+            (6, 9)                 : f"Happy birthday to me! Today, I am {age} years old.",
+            (7, 4)                 :  "Happy 4th of July!",
+            (10, 31)               :  "Happy Halloween!",
+            (11, thanksgiving_day) :  "Happy Thanksgiving!",
+            (12, 25)               :  "Happy Holidays!",
+            (12, 31)               :  "Happy New Year's Eve!",
+            (1, 1)                 :  "Happy New Year!",
+        }
+
+        target_text = holidays.get((today.month, today.day))
+        activity = self.bot.activity
+        activity_text = (activity.name or activity.state) if isinstance(activity, CustomActivity) else None
+
+        if target_text is not None:
+            if activity_text != target_text:
+                await self.bot.change_presence(activity = CustomActivity(target_text))
+        elif activity is not None:
+            await self.bot.change_presence(activity = None)
+
+    @_loop_fun.before_loop
+    async def _beforeloop_fun(self) -> None:
+        await self.bot.wait_until_ready()
 
     @Cog.listener("on_interaction")
     async def _listener_fun_command(self, interaction : Interaction) -> None:
