@@ -140,13 +140,19 @@ class Cordex(BaseBot):
         `str`
             The biography for this guild.
         """
-        return cast(
+        biography = cast(
             "TypedDict[{'bio' : str}]",
             await self.http.request(
                 route = Route("PATCH", t"/guilds/{guild.id}/members/@me"),
                 json  = {},
             ),
         )["bio"]
+
+        if not biography:
+            application = await self.application_info()
+            biography = application.description
+
+        return biography
 
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
     # Name Styles
