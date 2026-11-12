@@ -352,7 +352,10 @@ class Actions:
                 super().__init__(
                     entries,
                     title     = "# Server Lockdowns",
-                    footer    = Footer("Page {smallest_page} of {biggest_page} | {count} Lockdown{s}"),
+                    footer    = Footer(
+                        "Page {smallest_page} of {biggest_page} | {count} Lockdown{s}",
+                        on_single_page = "{count} Lockdown{s}",
+                    ),
                     per_page  = 10,
                     color     = COLOR_GREY,
                     container = True,
@@ -494,7 +497,10 @@ class Actions:
                         ],
                     ],
                     title     = "# Server Bans",
-                    footer    = Footer("Page {smallest_page} of {biggest_page} | {count} Ban{s}"),
+                    footer    = Footer(
+                        "Page {smallest_page} of {biggest_page} | {count} Ban{s}",
+                        on_single_page = "{count} Ban{s}",
+                    ),
                     per_page  = 10,
                     color     = COLOR_BLACK,
                     container = True,
@@ -669,7 +675,10 @@ class Actions:
                         ) for case in cases
                     ],
                     title     = "# Server Lockdowns",
-                    footer    = Footer("Page {smallest_page} of {biggest_page} | {count} Quarantine{s}"),
+                    footer    = Footer(
+                        "Page {smallest_page} of {biggest_page} | {count} Quarantine{s}",
+                        on_single_page = "{count} Quarantine{s}",
+                    ),
                     per_page  = 10,
                     color     = COLOR_ORANGE,
                     container = True,
@@ -826,7 +835,10 @@ class Actions:
                         ],
                     ],
                     title     = "# Server Timeouts",
-                    footer    = Footer("Page {smallest_page} of {biggest_page} | {count} Timeout{s}"),
+                    footer    = Footer(
+                        "Page {smallest_page} of {biggest_page} | {count} Timeout{s}",
+                        on_single_page = "{count} Timeout{s}",
+                    ),
                     per_page  = 10,
                     color     = COLOR_YELLOW,
                     container = True,

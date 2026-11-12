@@ -69,8 +69,7 @@ class _PageSelect(Select["NamedPaginator"]):
                     description = page.description,
                     emoji       = page.emoji,
                     default     = index == paginator.current_page,
-                )
-                for index, page in enumerate(paginator.pages)
+                ) for index, page in enumerate(paginator.pages)
             ],
         )
         self.paginator = paginator

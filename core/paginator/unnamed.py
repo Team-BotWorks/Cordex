@@ -179,7 +179,7 @@ class Footer:
     *
     singularize : `bool = True`
         Whether to remove the '{s}' placeholder on `footer` (if any) if only one item is provided in the paginator data list or not. Does nothing if `on_single_page` or `on_single_item` are used without placeholders.
-    on_single_page : `str | None = None`
+    on_single_page : `str | None = "{count} Item{s}"`
         The footer to use when only a single page is present in the paginator.
     on_single_item : `str | None = None`
         The footer to use when only a single item is present in the paginator data list.
@@ -191,7 +191,7 @@ class Footer:
         /,
         *,
         singularize    : bool       = True,
-        on_single_page : str | None = None,
+        on_single_page : str | None = "{count} Item{s}",
         on_single_item : str | None = None,
     ) -> None:
         super().__init__()
@@ -207,7 +207,7 @@ class UnnamedPaginator(InteractiveView):
 
     Parameters
     ----------
-    data : ItemsOrStrList`
+    data : `ItemsOrStrList`
         The data to paginate.
     /
     *

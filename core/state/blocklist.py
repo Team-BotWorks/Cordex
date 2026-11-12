@@ -156,7 +156,10 @@ class BlocklistManager:
                 super().__init__(
                     blocklist,
                     title     = "# Blocklist",
-                    footer    = Footer("Page {smallest_page} of {biggest_page} | {count} Block{s}"),
+                    footer    = Footer(
+                        "Page {smallest_page} of {biggest_page} | {count} Block{s}",
+                        on_single_page = "{count} Block{s}",
+                    ),
                     per_page  = 15,
                     color     = COLOR_BLACK,
                     container = True,

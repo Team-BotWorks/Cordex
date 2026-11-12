@@ -462,7 +462,10 @@ async def run_server_commands(interaction : Interaction) -> None:
     view = UnnamedPaginator(
         _build_sections(interaction, state),
         title     = state.title,
-        footer    = Footer("Page {smallest_page} of {biggest_page} | {count} Command{s}"),
+        footer    = Footer(
+            "Page {smallest_page} of {biggest_page} | {count} Command{s}",
+            on_single_page = "{count} Command{s}",
+        ),
         container = True,
     )
     view.add_under(
