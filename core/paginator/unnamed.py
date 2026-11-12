@@ -200,6 +200,27 @@ class Footer:
         self.on_single_page = f"-# {on_single_page}" if on_single_page is not None else None
         self.on_single_item = f"-# {on_single_item}" if on_single_item is not None else None
 
+    @classmethod
+    def from_name(cls, name : str, /) -> Self:
+        """
+        Construct a conventional footer that handles data naming and `on_single_page` automatically.
+
+        Parameters
+        ----------
+        name : `str`
+            The name of the data used in the footer.
+        /
+
+        Returns
+        -------
+        `Self`
+            The footer.
+        """
+        return cls(
+            "Page {smallest_page} of {biggest_page} | {count} " + name + "{s}",
+            on_single_page = "{count} " + name + "{s}",
+        )
+
 
 class UnnamedPaginator(InteractiveView):
     """

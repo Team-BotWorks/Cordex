@@ -173,10 +173,7 @@ async def run_moderation_cases_query(
             super().__init__(
                 [build_case_section(case, manager) for case in cases],
                 title     = "# Cases Found",
-                footer    = Footer(
-                    "Page {smallest_page} of {biggest_page} | {count} Case{s}",
-                    on_single_page = "{count} Case{s}",
-                ),
+                footer    = Footer.from_name("Case"),
                 per_page  = 10,
                 color     = COLOR_GREY,
                 container = True,
