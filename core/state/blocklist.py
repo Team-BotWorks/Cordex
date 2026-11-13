@@ -27,7 +27,6 @@ class BlocklistManager:
     """
 
     def __init__(self, bot : Cordex) -> None:
-        super().__init__()
         self.bot = bot
 
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻

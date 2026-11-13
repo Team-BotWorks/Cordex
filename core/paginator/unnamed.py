@@ -199,8 +199,6 @@ class Footer:
         on_single_page : str | None = "{count} Item{s}",
         on_single_item : str | None = None,
     ) -> None:
-        super().__init__()
-
         if content:
             if content.count("{smallest_page}") > 1:
                 error = "'{smallest_page}' placeholder declared more than once"

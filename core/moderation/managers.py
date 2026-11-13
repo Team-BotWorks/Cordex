@@ -33,7 +33,6 @@ class LockdownManager:
     __slots__ = ("bot", "guild")
 
     def __init__(self, bot : Cordex, guild : Guild) -> None:
-        super().__init__()
         self.bot   = bot
         self.guild = guild
 
@@ -224,7 +223,6 @@ class QuarantineManager:
     __slots__ = ("bot", "guild")
 
     def __init__(self, bot : Cordex, guild : Guild) -> None:
-        super().__init__()
         self.bot   = bot
         self.guild = guild
 

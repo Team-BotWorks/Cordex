@@ -187,7 +187,6 @@ class Actions:
     __slots__ = ("bot", "cases", "config", "guild", "lockdown", "quarantine")
 
     def __init__(self, bot : Cordex, guild : Guild) -> None:
-        super().__init__()
         from .cases import CasesManager  # ruff: ignore[import-outside-top-level]
 
         self.bot    = bot
