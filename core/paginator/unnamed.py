@@ -183,6 +183,11 @@ class Footer:
         The footer to use when only a single page is present in the paginator.
     on_single_item : `str | None = None`
         The footer to use when only a single item is present in the paginator data list.
+
+    Raises
+    ------
+    ValueError
+        A placeholder was declared more than once throughout the `content` string.
     """
 
     def __init__(
@@ -195,6 +200,21 @@ class Footer:
         on_single_item : str | None = None,
     ) -> None:
         super().__init__()
+
+        if content:
+            if content.count("{smallest_page}") > 1:
+                error = "'{smallest_page}' placeholder declared more than once"
+                raise ValueError(error)
+            if content.count("{biggest_page}") > 1:
+                error = "'{biggest_page}' placeholder declared more than once"
+                raise ValueError(error)
+            if content.count("{count}") > 1:
+                error = "'{count}' placeholder declared more than once"
+                raise ValueError(error)
+            if content.count("{s}") > 1:
+                error = "'{s}' placeholder declared more than once"
+                raise ValueError(error)
+
         self.content        = f"-# {content}" if content is not None else None
         self.singularize    = singularize
         self.on_single_page = f"-# {on_single_page}" if on_single_page is not None else None
