@@ -27,10 +27,10 @@ class HelpCommand(Cog):
     @cmd_help.autocomplete("command")
     async def autocomplete_cmdhelp(self, interaction : Interaction, current : str) -> list[Choice[str]]:
         return [
-            Choice(name = f"/{cmd.qualified_name}", value = cmd.qualified_name)
-            for cmd in interaction.client.tree.walk_commands() if not
-            isinstance(cmd, Group) and
-            current.lower() in cmd.qualified_name.lower()
+            Choice(name = f"/{command.qualified_name}", value = command.qualified_name)
+            for command in interaction.client.tree.walk_commands()
+            if not isinstance(command, Group)
+            and current.lower() in command.qualified_name.lower()
         ][:25]
 
 
