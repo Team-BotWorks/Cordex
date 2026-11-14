@@ -90,8 +90,4 @@ async def run_help(interaction : Interaction, command_name : str) -> None:
         )
         return
 
-    details = get_command_help(command)
-    if not details:
-        return
-
-    await interaction.response.send_message(view = _HelpView(details))
+    await interaction.response.send_message(view = _HelpView(get_command_help(command)))
