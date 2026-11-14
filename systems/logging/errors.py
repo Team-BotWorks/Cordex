@@ -37,7 +37,7 @@ from core.exceptions import (
     send_unimplemented_command,
 )
 from core.responses import FormatOverride, MessageType, PunctuationOverride, format_send
-from core.utilities import codeblock, format_command, format_now, format_table
+from core.utilities import codeblock, format_command, format_now, format_table, truncate
 
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 # Errors Logging
@@ -309,7 +309,7 @@ class ErrorLogger(Cog):
             return
 
         traceback = "".join(format_exception(error))
-        await send_bad_operation(ctx, subtitle = codeblock(traceback))
+        await send_bad_operation(ctx, subtitle = truncate(codeblock(traceback)))
 
         await self._send_error(
             title     = "Prefix Command Error",
