@@ -259,7 +259,7 @@ class Cordex(BaseBot):
         styles = response.get("display_name_styles")
         if styles is None:
             return DisplayNameStyle(
-                font   = DisplayNameFont.solid,
+                font   = DisplayNameFont.default,
                 effect = DisplayNameEffect.gradient,
                 colors = [COLOR_WHITE],
             )
