@@ -112,7 +112,7 @@ async def run_review(ctx : Context) -> None:
         )
 
         response = await ai_client.chat.completions.create(
-            model           = "gemini-2.5-flash",
+            model           = "gemini-3.6-flash",
             temperature     = 0.7,
             response_format = {"type" : "json_object"},
             messages        = [
