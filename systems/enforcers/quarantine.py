@@ -6,7 +6,7 @@ from discord.ext.commands import Cog
 from discord.ext.tasks import loop
 
 from bot import Cordex, log
-from core.moderation import CasesManager, QuarantineManager
+from core.moderation import QuarantineManager
 
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 # Quarantine Enforcing
@@ -28,9 +28,6 @@ class QuarantineEnforcer(Cog):
 
     def _quarantine(self, guild : Guild) -> QuarantineManager:
         return QuarantineManager(self.bot, guild)
-
-    def _cases(self, guild : Guild) -> CasesManager:
-        return CasesManager(self.bot, guild)
 
     @loop(minutes = 10)
     async def _loop_quarantineenforce(self) -> None:
@@ -158,7 +155,7 @@ class QuarantineEnforcer(Cog):
             return
 
         await manager.remove(member)
-        if case := await self._cases(guild).get_member_active_case(member):
+        if case := await self.bot.cases(guild).get_member_active_case(member):
             await case.expire()
 
     @Cog.listener("on_member_remove")
@@ -172,7 +169,7 @@ class QuarantineEnforcer(Cog):
             if target and isinstance(target, User | Member):
                 target = cast("Member", target)
                 await manager.remove(target)
-                if case := await self._cases(entry.guild).get_member_active_case(target):
+                if case := await self.bot.cases(entry.guild).get_member_active_case(target):
                     await case.expire()
 
     @Cog.listener("on_member_update")
@@ -186,7 +183,7 @@ class QuarantineEnforcer(Cog):
             and after.timed_out_until is not None
         ):
             await manager.remove(after)
-            if case := await self._cases(after.guild).get_member_active_case(after):
+            if case := await self.bot.cases(after.guild).get_member_active_case(after):
                 await case.expire()
 
 

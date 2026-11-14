@@ -3,7 +3,6 @@ from discord import AllowedMentions
 from bot import Interaction
 from commands.moderation._base import build_case_section, send_case_view
 from constants import COLOR_GREY
-from core.moderation import CasesManager
 from core.paginator import Footer, UnnamedPaginator
 from core.responses import FormatOverride, MessageType, format_send
 
@@ -27,13 +26,12 @@ async def run_moderation_cases_view(interaction : Interaction, case_id : int | N
     if not guild:
         return
 
-    manager = CasesManager(interaction.client, guild)
-
     if case_id is not None:
-        await send_case_view(interaction, manager, case_id)
+        await send_case_view(interaction, case_id)
         return
 
-    cases = await manager.get_all_cases()
+    manager = interaction.client.cases(guild)
+    cases = await manager.get_all()
     if not cases:
         await format_send(
             interaction,

@@ -187,13 +187,11 @@ class Actions:
     __slots__ = ("bot", "cases", "config", "guild", "lockdown", "quarantine")
 
     def __init__(self, bot : Cordex, guild : Guild) -> None:
-        from .cases import CasesManager  # ruff: ignore[import-outside-top-level]
-
         self.bot    = bot
         self.guild  = guild
         self.config = self.bot.config(guild)
 
-        self.cases      = CasesManager(bot, guild)
+        self.cases      = bot.cases(guild)
         self.lockdown   = LockdownManager(bot, guild)
         self.quarantine = QuarantineManager(bot, guild)
 
@@ -301,7 +299,7 @@ class Actions:
         else:
             failed = False
 
-        case = await self.cases.create_case(action)
+        case = await self.cases.create(action)
 
         return _ActionResult(
             failed = failed,
@@ -399,7 +397,7 @@ class Actions:
             failed = False
             await self.lockdown.remove(channel)
 
-        case = await self.cases.create_case(action)
+        case = await self.cases.create(action)
 
         return _ActionResult(
             failed = failed,
@@ -441,7 +439,7 @@ class Actions:
         else:
             failed = False
 
-        case = await self.cases.create_case(action)
+        case = await self.cases.create(action)
 
         return _ActionResult(
             failed = failed,
@@ -535,7 +533,7 @@ class Actions:
         else:
             failed = False
 
-        case = await self.cases.create_case(action)
+        case = await self.cases.create(action)
 
         return _ActionResult(
             failed = failed,
@@ -577,7 +575,7 @@ class Actions:
         else:
             failed = False
 
-        case = await self.cases.create_case(action)
+        case = await self.cases.create(action)
 
         return _ActionResult(
             failed = failed,
@@ -628,7 +626,7 @@ class Actions:
         else:
             failed = False
 
-        case = await self.cases.create_case(action)
+        case = await self.cases.create(action)
 
         return _ActionResult(
             failed = failed,
@@ -726,7 +724,7 @@ class Actions:
         else:
             failed = False
 
-        case = await self.cases.create_case(action)
+        case = await self.cases.create(action)
 
         return _ActionResult(
             failed = failed,
@@ -768,7 +766,7 @@ class Actions:
         else:
             failed = False
 
-        case = await self.cases.create_case(action)
+        case = await self.cases.create(action)
 
         return _ActionResult(
             failed = failed,
@@ -867,7 +865,7 @@ class Actions:
         else:
             failed = False
 
-        case = await self.cases.create_case(action)
+        case = await self.cases.create(action)
 
         return _ActionResult(
             failed = failed,
@@ -921,7 +919,7 @@ class Actions:
         else:
             failed = False
 
-        case = await self.cases.create_case(action)
+        case = await self.cases.create(action)
 
         return _ActionResult(
             failed = failed,

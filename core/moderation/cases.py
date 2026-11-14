@@ -1,3 +1,4 @@
+from collections.abc import AsyncIterator
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Self, cast, final
@@ -187,9 +188,9 @@ class Case:
 
 
 @final
-class CasesManager:
+class CaseManager:
     """
-    A manager for cases operations.
+    A manager for case operations.
 
     Parameters
     ----------
@@ -204,6 +205,10 @@ class CasesManager:
     def __init__(self, bot : Cordex, guild : Guild) -> None:
         self.bot   = bot
         self.guild = guild
+
+    async def __aiter__(self) -> AsyncIterator[Case]:
+        for case in await self.get_all():
+            yield case
 
     async def _force_fetch(self, user_id : int, /) -> Member | User:
         try:
@@ -257,10 +262,10 @@ class CasesManager:
         log.exception("Failure during %s in guild %s, %s%s", msg, self.guild.name, self.guild.id, rate_limited_msg)
 
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
-    # create_case
+    # create
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
-    async def create_case(self, payload : Payloads, /) -> _CreateCaseResult:
+    async def create(self, payload : Payloads, /) -> _CreateCaseResult:
         """
         Create and log a case based off of a payload.
 
@@ -561,10 +566,10 @@ class CasesManager:
         )
 
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
-    # get_case
+    # get
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
-    async def get_case(self, case_id : int, /) -> Case | None:
+    async def get(self, case_id : int, /) -> Case | None:
         """
         Get a case from the database by its ID.
 
@@ -623,12 +628,12 @@ class CasesManager:
         return await self._row_to_case(row)
 
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
-    # get_all_cases
+    # get_all
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
-    async def get_all_cases(self) -> list[Case]:
+    async def get_all(self) -> list[Case]:
         """
-        Get all cases for the guild from the database.
+        Get all cases for this guild from the database.
 
         Returns
         -------
@@ -698,11 +703,11 @@ class CasesManager:
             (action_type, moderator_id, target_id, channel_id, expired, before, after)
         ):
             warn(
-                "Prefer CasesManager.get_all_cases over CasesManager.filter_by if implicitly getting all cases by passing no filters.",
+                "Prefer CaseManager.get_all over CaseManager.filter_by if implicitly getting all cases by passing no filters.",
                 category   = UserWarning,
                 stacklevel = 2,
             )
-            return await self.get_all_cases()
+            return await self.get_all()
 
         if before is not None and after is not None and after >= before:
             error = "Parameter 'before' must be a date later than that of parameter 'after'."
@@ -748,12 +753,12 @@ class CasesManager:
         return list(reversed(cases))
 
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
-    # delete_all_cases
+    # delete_all
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
-    async def delete_all_cases(self) -> bool:
+    async def delete_all(self) -> bool:
         """
-        Delete all cases for the guild from the database.
+        Delete all cases for this guild from the database.
 
         Returns
         -------

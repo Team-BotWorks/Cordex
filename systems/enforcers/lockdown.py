@@ -8,7 +8,7 @@ from discord.ext.tasks import loop
 
 from bot import Cordex, log
 from bot.types import GuildMessageableChannel
-from core.moderation import CasesManager, LockdownManager, LockdownRemovePayload
+from core.moderation import LockdownManager, LockdownRemovePayload
 
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 # Lockdown Enforcing
@@ -85,8 +85,7 @@ class LockdownEnforcer(Cog):
         manager = LockdownManager(self.bot, guild)
         if await manager.is_locked_down(channel):
             await manager.remove(channel)
-
-            await CasesManager(self.bot, guild).create_case(
+            await self.bot.cases(guild).create(
                 LockdownRemovePayload(
                     moderator = guild.me,
                     channel   = channel,

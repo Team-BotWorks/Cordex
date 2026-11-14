@@ -6,7 +6,7 @@ from importlib import import_module
 from logging import getLogger as get_logger
 from pathlib import Path
 from pkgutil import walk_packages
-from typing import NotRequired, TypedDict, cast, final, override
+from typing import TYPE_CHECKING, NotRequired, TypedDict, cast, final, override
 
 from aiosqlite import Row
 from discord import Color, Guild, Intents, Message, Status, User
@@ -36,6 +36,9 @@ from core.state import (
     Restriction,
     connect,
 )
+
+if TYPE_CHECKING:
+    from core.moderation import CaseManager
 
 from .context import Context, Tree
 from .types import NOT_PASSED, DisplayNameStyle, Route
@@ -91,6 +94,24 @@ class Cordex(BaseBot):
         if getattr(cog.__class__, "__unrestrictable__", False):
             for command in cog.walk_app_commands():
                 command.extras["unrestrictable"] = True
+
+    def cases(self, guild : Guild, /) -> CaseManager:
+        """
+        Get the case manager for a guild.
+
+        Parameters
+        ----------
+        guild : `Guild`
+            The guild to get the case manager for.
+        /
+
+        Returns
+        -------
+        `CaseManager`
+            The case manager for this guild.
+        """
+        from core.moderation import CaseManager  # ruff: ignore[import-outside-top-level]
+        return CaseManager(self, guild)
 
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
     # Configuration

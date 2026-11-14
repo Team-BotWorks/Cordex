@@ -16,7 +16,7 @@ from bot.ui import (
 )
 from constants import COLOR_GREY
 from core.exceptions import send_bad_argument
-from core.moderation import Case, CasesManager
+from core.moderation import Case, CaseManager
 from core.utilities import format_table
 
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
@@ -26,14 +26,14 @@ from core.utilities import format_table
 
 @final
 class _OpenCaseButton[V : View](Button[V]):
-    def __init__(self, manager : CasesManager, case_id : int) -> None:
+    def __init__(self, manager : CaseManager, case_id : int) -> None:
         super().__init__(label = "View")
         self.manager = manager
         self.case_id = case_id
 
     @override
     async def callback(self, interaction : Interaction) -> None:  # pyright: ignore[reportIncompatibleMethodOverride]
-        await send_case_view(interaction, self.manager, self.case_id)
+        await send_case_view(interaction, self.case_id)
 
 
 def _format_summary(case : Case) -> str:
@@ -68,11 +68,11 @@ def _format_summary(case : Case) -> str:
     return "\n".join(lines)
 
 
-def build_case_section[V : View](case : Case, manager : CasesManager) -> ButtonSection[V]:
+def build_case_section[V : View](case : Case, manager : CaseManager) -> ButtonSection[V]:
     return ButtonSection(_format_summary(case), button = _OpenCaseButton(manager, case.id))
 
 
-async def build_case_view(bot : Cordex, case : Case, manager : CasesManager) -> View:
+async def build_case_view(bot : Cordex, case : Case) -> View:
     view      = View()
     container = Container[view](TextDisplay(f"# {case.action_type.readable} | #{case.id}"), color = COLOR_GREY)
 
@@ -139,7 +139,7 @@ async def build_case_view(bot : Cordex, case : Case, manager : CasesManager) -> 
             ButtonSection(
                 f"## Related Case\n"
                 f"#{related_case_id}",
-                button = _OpenCaseButton(manager, related_case_id),
+                button = _OpenCaseButton(bot.cases(case.guild), related_case_id),
             ),
         )
 
@@ -157,14 +157,19 @@ async def build_case_view(bot : Cordex, case : Case, manager : CasesManager) -> 
     return view
 
 
-async def send_case_view(interaction : Interaction, manager : CasesManager, case_id : int) -> None:
-    case = await manager.get_case(case_id)
+async def send_case_view(interaction : Interaction, case_id : int) -> None:
+    client = interaction.client
+    guild = interaction.guild
+    if not guild:
+        return
+
+    case = await client.cases(guild).get(case_id)
     if not case:
         await send_bad_argument(interaction, subtitle = {"case-id" : "Case not found."})
         return
 
     await interaction.response.send_message(
-        view             = await build_case_view(interaction.client, case, manager),
+        view             = await build_case_view(interaction.client, case),
         ephemeral        = True,
         allowed_mentions = AllowedMentions.none(),
     )

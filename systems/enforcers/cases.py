@@ -5,7 +5,6 @@ from discord.ext.commands import Cog
 from discord.ext.tasks import loop
 
 from bot import Cordex, log
-from core.moderation import CasesManager
 
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 # Case Enforcing
@@ -49,7 +48,7 @@ class CasesEnforcer(Cog):
 
     @Cog.listener("on_guild_remove")
     async def _listener_caseenforce_guildleave(self, guild : Guild) -> None:
-        await CasesManager(self.bot, guild).delete_all_cases()
+        await self.bot.cases(guild).delete_all()
 
 
 async def setup(bot : Cordex) -> None:  # ruff: ignore[undocumented-public-function]

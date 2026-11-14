@@ -6,7 +6,6 @@ from discord.ext.commands import Cog
 from discord.ext.tasks import loop
 
 from bot import Cordex, log
-from core.moderation import CasesManager
 
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 # Configuration Enforcing
@@ -56,7 +55,6 @@ class ConfigEnforcer(Cog):
     @Cog.listener("on_guild_remove")
     async def _listener_config_guildremove(self, guild : Guild) -> None:
         await self.bot.delete_configs(guild.id)
-        await CasesManager(self.bot, guild).delete_all_cases()  # ⸻ This is probably not the right place to do this.
 
     @Cog.listener("on_guild_channel_delete")
     async def _listener_config_channeldelete(self, channel : GuildChannel) -> None:

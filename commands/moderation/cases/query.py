@@ -7,7 +7,7 @@ from bot.types import GuildMessageable
 from commands.moderation._base import build_case_section
 from constants import COLOR_GREY
 from core.exceptions import send_bad_argument
-from core.moderation import ActionType, CasesManager
+from core.moderation import ActionType
 from core.paginator import Footer, UnnamedPaginator
 from core.responses import FormatOverride, MessageType, format_send
 
@@ -132,7 +132,7 @@ async def run_moderation_cases_query(
         )
         return
 
-    manager = CasesManager(interaction.client, guild)
+    manager = interaction.client.cases(guild)
     try:
         cases = await manager.filter_by(
             action_type  = parsed_action,
@@ -151,7 +151,7 @@ async def run_moderation_cases_query(
         return
 
     if not cases:
-        if not await manager.get_all_cases():
+        if not await manager.get_all():
             await format_send(
                 interaction,
                 MessageType.warning,

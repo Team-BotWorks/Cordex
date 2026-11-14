@@ -25,7 +25,7 @@ from core.exceptions import (
     UnconfiguredQuarantine,
     send_bad_operation,
 )
-from core.moderation import ActionType, CasesManager
+from core.moderation import ActionType
 from core.state import requires_restriction
 
 from .ban import (
@@ -354,7 +354,7 @@ class ModerationCommands(
 
         return [
             Choice(name = f"#{case.id} | {case.action_type.readable}", value = case.id)
-            for case in await CasesManager(interaction.client, guild).get_all_cases()
+            async for case in interaction.client.cases(guild)
             if current.lower() in f"#{case.id} | {case.action_type.readable}".lower()
         ][:25]
 
