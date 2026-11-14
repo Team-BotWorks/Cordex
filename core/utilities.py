@@ -150,8 +150,7 @@ def format_table[K, V](table : dict[K, V], /, *, padding : int = 1) -> str:
         - `table` contains newlines in any of the keys or values.
     """
     if not table:
-        error = "table dictionary cannot be empty"
-        raise ValueError(error)
+        return ""
 
     if (
         any("\n" in key   for key   in table          if isinstance(key, str)) or
