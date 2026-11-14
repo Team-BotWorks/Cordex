@@ -39,7 +39,7 @@ TOP_GRADES = {"Brilliant", "Great", "Best", "Book Move"}
 
 ai_client = AsyncOpenAI(
     api_key  = getenv("GEMINI_API_KEY"),
-    base_url = "https://googleapis.com",
+    base_url = "https://generativelanguage.googleapis.com/v1beta/openai/",
 )
 
 PROMPT = """
