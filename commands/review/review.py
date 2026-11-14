@@ -162,4 +162,5 @@ async def run_review(ctx : Context) -> None:
                     ],
                 )
 
+        await message_to_review.add_reaction(emoji)
         await ctx.reply(truncate("\n".join(output_lines)))
