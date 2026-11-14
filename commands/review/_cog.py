@@ -5,7 +5,7 @@ from discord.ext.commands import command as prefix_command
 
 from bot import Context, Cordex
 
-from .review import run_review
+from .review import ReviewFlags, run_review
 
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 # Review Command
@@ -19,8 +19,8 @@ class ReviewCommand(Cog):
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
     @prefix_command(name = "review")
-    async def cmd_review(self, ctx : Context) -> None:
-        await run_review(ctx)
+    async def cmd_review(self, ctx : Context, *, flags : ReviewFlags) -> None:
+        await run_review(ctx, flags = flags)
 
 
 async def setup(bot : Cordex) -> None:

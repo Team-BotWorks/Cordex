@@ -3,6 +3,7 @@ from os import getenv
 from typing import cast
 
 from discord import NotFound
+from discord.ext.commands import FlagConverter, flag
 from openai import AsyncOpenAI
 
 from bot import Context
@@ -39,7 +40,7 @@ TOP_GRADES = {"Brilliant", "Great", "Best", "Book Move"}
 
 ai_client = AsyncOpenAI(
     api_key  = getenv("GEMINI_API_KEY"),
-    base_url = "https://generativelanguage.googleapis.com/v1beta/openai"
+    base_url = "https://generativelanguage.googleapis.com/v1beta/openai",
 )
 
 PROMPT = """
@@ -80,7 +81,11 @@ def _format_blockquote(text : str, /) -> str:
     return "\n".join(f"> {line}" for line in text.splitlines())
 
 
-async def run_review(ctx : Context) -> None:
+class ReviewFlags(FlagConverter, prefix = "--", delimiter = " "):
+    no_context : bool = cast("bool", flag(name = "no-context", default = False))
+
+
+async def run_review(ctx : Context, *, flags : ReviewFlags) -> None:
     if not ctx.message.reference or not ctx.message.reference.message_id:
         await send_bad_argument(ctx, subtitle = "No message to review was provided. Provide one by replying to the message to review.")
         return
@@ -96,14 +101,18 @@ async def run_review(ctx : Context) -> None:
             await send_bad_argument(ctx, subtitle = "Message to review has no content.")
             return
 
-        message_lines = [
-            f"{message.author.display_name}: {message.content}"
-            async for message in ctx.channel.history(limit = 10, before = message_to_review)
-            if message.content
-        ]
+        context_block : str
+        if flags.no_context:
+            context_block = "Message to review is intentionally left with no context. Good luck!"
+        else:
+            message_lines = [
+                f"{message.author.display_name}: {message.content}"
+                async for message in ctx.channel.history(limit = 10, before = message_to_review)
+                if message.content
+            ]
 
-        message_lines.reverse()
-        context_block = "\n".join(message_lines) or "No prior messages."
+            message_lines.reverse()
+            context_block = "\n".join(message_lines) or "No prior messages."
 
         user_text = (
             f"--- RECENT CHAT CONTEXT ---\n"
