@@ -901,9 +901,27 @@ class Actions:
             if not target:
                 return await channel.purge(limit = amount, reason = reason)
 
+            if not action.force:
+                return await channel.purge(
+                    limit  = amount,
+                    check  = lambda m : m.author == target,
+                    reason = reason,
+                )
+
+            messages : list[Message] = []
+            async for message in channel.history(limit = 1000):
+                if message.author == target:
+                    messages.append(message)
+                    if len(messages) == amount:
+                        break
+
+            if not messages:
+                return []
+
             return await channel.purge(
-                limit  = 1000 if action.force else amount,
-                check  = lambda m : m.author == target,
+                limit  = 1000,
+                after  = messages[-1].created_at,
+                check  = lambda m : m in messages,
                 reason = reason,
             )
 
