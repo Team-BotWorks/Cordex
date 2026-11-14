@@ -38,9 +38,8 @@ TOP_GRADES = {"Brilliant", "Great", "Best", "Book Move"}
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
 ai_client = AsyncOpenAI(
-    api_key         = getenv("GROQ_API_KEY"),
-    base_url        = "https://api.groq.com/openai/v1",
-    default_headers = {"User-Agent" : "Groq/Python 0.11.0"},
+    api_key  = getenv("GEMINI_API_KEY"),
+    base_url = "https://googleapis.com",
 )
 
 PROMPT = """
@@ -113,9 +112,9 @@ async def run_review(ctx : Context) -> None:
         )
 
         response = await ai_client.chat.completions.create(
-            model           = "llama-3.3-70b-versatile",
+            model           = "gemini-2.5-flash",
             temperature     = 0.7,
-            response_format = {"type": "json_object"},
+            response_format = {"type" : "json_object"},
             messages        = [
                 {
                     "role"    : "system",
