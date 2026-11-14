@@ -38,8 +38,9 @@ TOP_GRADES = {"Brilliant", "Great", "Best", "Book Move"}
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
 ai_client = AsyncOpenAI(
-    api_key  = getenv("GROQ_API_KEY"),
-    base_url = "https://api.groq.com/openai/v1",
+    api_key         = getenv("GROQ_API_KEY"),
+    base_url        = "https://api.groq.com/openai/v1",
+    default_headers = {"User-Agent" : "Groq/Python 0.11.0"},
 )
 
 PROMPT = """
