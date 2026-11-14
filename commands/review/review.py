@@ -3,7 +3,7 @@ from os import getenv
 from typing import cast
 
 from discord import NotFound
-from discord.ext.commands import FlagConverter, flag
+from discord.ext.commands import FlagConverter
 from openai import AsyncOpenAI
 
 from bot import Context
@@ -82,7 +82,7 @@ def _format_blockquote(text : str, /) -> str:
 
 
 class ReviewFlags(FlagConverter, prefix = "--", delimiter = " "):
-    no_context : bool = cast("bool", flag(name = "no-context", default = False))
+    nocontext : bool = False
 
 
 async def run_review(ctx : Context, *, flags : ReviewFlags) -> None:
@@ -102,7 +102,7 @@ async def run_review(ctx : Context, *, flags : ReviewFlags) -> None:
             return
 
         context_block : str
-        if flags.no_context:
+        if flags.nocontext:
             context_block = "Message to review is intentionally left with no context. Good luck!"
         else:
             message_lines = [
