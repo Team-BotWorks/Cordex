@@ -7,6 +7,7 @@ from openai import AsyncOpenAI
 
 from bot import Context
 from core.exceptions import send_bad_argument, send_bad_operation
+from core.utilities import truncate
 
 BLUNDER_EMOJI    = "<:blunder:1570954643322703913>"
 MISTAKE_EMOJI    = "<:mistake:1570954750344560770>"
@@ -159,4 +160,4 @@ async def run_review(ctx : Context) -> None:
                     ],
                 )
 
-        await ctx.reply("\n".join(output_lines))
+        await ctx.reply(truncate("\n".join(output_lines)))
