@@ -6,7 +6,16 @@ from importlib import import_module
 from logging import getLogger as get_logger
 from pathlib import Path
 from pkgutil import walk_packages
-from typing import TYPE_CHECKING, NotRequired, TypedDict, cast, final, override
+from typing import (
+    TYPE_CHECKING,
+    Literal,
+    NotRequired,
+    TypedDict,
+    cast,
+    final,
+    overload,
+    override,
+)
 
 from aiosqlite import Row
 from discord import Color, Guild, Intents, Message, Status, User
@@ -151,14 +160,27 @@ class Cordex(BaseBot):
     # Biography
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
-    async def get_biography(self, guild : Guild, /) -> str:
+    @overload
+    async def get_biography(self, guild : Guild, /, *, fallback : Literal[True] = True) -> str: ...
+
+    @overload
+    async def get_biography(self, guild : Guild, /, *, fallback : Literal[False]) -> str | None: ...
+
+    async def get_biography(self, guild : Guild, /, *, fallback : bool = True) -> str | None:
         """
         Get the bot's biography for this guild.
 
+        Parameters
+        ----------
+        guild : `Guild`
+            The guild to get the biography for.
+        fallback : `bool`
+            Whether to fall back to the application's global biography when the guild has none.
+
         Returns
         -------
-        `str`
-            The biography for this guild.
+        `str` | `None`
+            The biography for this guild, or `None` if there is none and `fallback` is `False`.
         """
         biography = cast(
             "TypedDict[{'bio' : str}]",
@@ -166,11 +188,11 @@ class Cordex(BaseBot):
                 route = Route("PATCH", t"/guilds/{guild.id}/members/@me"),
                 json  = {},
             ),
-        )["bio"]
+        )["bio"] or None
 
-        if not biography:
+        if biography is None and fallback:
             application = await self.application_info()
-            biography = application.description
+            return application.description
 
         return biography
 

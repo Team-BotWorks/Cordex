@@ -223,7 +223,7 @@ class _BioModal(Modal, title = "Editing Biography"):
         self._bio = TextInput[Self](
             style       = TextStyle.paragraph,
             placeholder = "Write a short biography...",
-            default     = view.biography,
+            default     = view.biography or view.default_biography,
             required    = False,
             max_length  = 300,
         )
@@ -280,9 +280,89 @@ class _BioButton(Button["_PersonalizationView"]):
         await interaction.response.send_modal(_BioModal(self.view))
 
 
+async def _confirm_reset(
+    interaction : Interaction,
+    view        : _PersonalizationView,
+    keys        : set[str],
+    target      : str,
+) -> None:
+    guild = interaction.guild
+    if not guild:
+        return
+
+    me = guild.me
+    if not me:
+        return
+
+    async def accept(confirmation_interaction : Interaction) -> None:
+        await confirmation_interaction.response.defer()
+
+        client = confirmation_interaction.client
+
+        try:
+            if keys & {"font", "effect", "colors"}:
+                font   = DisplayNameFont.default if "font"   in keys else view.style.font
+                effect = DisplayNameEffect.solid if "effect" in keys else view.style.effect
+                colors = []                      if "colors" in keys else list(view.style.colors)
+
+                if effect not in {
+                    DisplayNameEffect.prism,
+                    DisplayNameEffect.gradient,
+                    DisplayNameEffect.gummy,
+                }:
+                    colors = colors[:1]
+
+                await client.set_name_style(guild, font = font, effect = effect, colors = colors)
+                view.style = await client.get_name_style(guild)
+            if "avatar" in keys:
+                await me.edit(avatar = None)
+                view.avatar_url = None
+            if "banner" in keys:
+                await me.edit(banner = None)
+                view.banner_url = None
+            if "biography" in keys:
+                await me.edit(bio = None)
+                view.biography = None
+        except Exception:
+            await send_bad_operation(confirmation_interaction, title = f"reset {target}")
+            raise
+        finally:
+            view.update_pages()
+            if view.message:
+                await view.message.edit(view = view)
+
+        await confirmation_interaction.delete_original_response()
+
+    async def deny(confirmation_interaction : Interaction) -> None:
+        await confirmation_interaction.response.defer()
+        await confirmation_interaction.delete_original_response()
+
+    confirmation = Confirmation(
+        TextDisplay(
+            format_message(
+                MessageType.warning,
+                title    =  "Warning",
+                subtitle = f"This will reset {target} to {"its" if len(keys) == 1 else "their"} default state. This cannot be undone!",
+                override = FormatOverride(prefix = False),
+            ),
+        ),
+        acceptance_label = "Reset",
+        denial_label     = "Cancel",
+        on_acceptance    = accept,
+        on_denial        = deny,
+    )
+
+    await interaction.response.send_message(view = confirmation, ephemeral = True)
+    confirmation.message = await interaction.original_response()
+
+
 @final
 class _ResetModal(Modal):
-    def __init__(self, view : _PersonalizationView, category : _Category) -> None:
+    def __init__(
+        self,
+        view     : _PersonalizationView,
+        category : Literal["Name Style", "Avatar & Banner"],
+    ) -> None:
         super().__init__(title = f"Reset {category}")
         self.view     = view
         self.category = category
@@ -300,10 +380,6 @@ class _ResetModal(Modal):
                 candidates = [
                     ("avatar", "Avatar", bool(view.avatar_url)),
                     ("banner", "Banner", bool(view.banner_url)),
-                ]
-            case "Biography":
-                candidates = [
-                    ("biography", "Biography", bool(view.biography)),
                 ]
 
         self._options = {key : label for key, label, configured in candidates if configured}
@@ -329,81 +405,12 @@ class _ResetModal(Modal):
 
     @override
     async def on_submit(self, interaction : Interaction) -> None:
-        guild = interaction.guild
-        if not guild:
-            return
-
-        me = guild.me
-        if not me:
-            return
-
-        view     = self.view
-        category = self.category
-        choice   = self._selection.values[0]
+        choice = self._selection.values[0]
 
         keys   = set(self._options) if choice == "all" else {choice}
-        target = f"all {category.lower()} settings" if choice == "all" else self._options[choice].lower()
+        target = f"all {self.category.lower()} settings" if choice == "all" else self._options[choice].lower()
 
-        async def accept(confirmation_interaction : Interaction) -> None:
-            await confirmation_interaction.response.defer()
-
-            client = confirmation_interaction.client
-
-            try:
-                if keys & {"font", "effect", "colors"}:
-                    font   = DisplayNameFont.default if "font"   in keys else view.style.font
-                    effect = DisplayNameEffect.solid if "effect" in keys else view.style.effect
-                    colors = []                      if "colors" in keys else list(view.style.colors)
-
-                    if effect not in {
-                        DisplayNameEffect.prism,
-                        DisplayNameEffect.gradient,
-                        DisplayNameEffect.gummy,
-                    }:
-                        colors = colors[:1]
-
-                    await client.set_name_style(guild, font = font, effect = effect, colors = colors)
-                    view.style = await client.get_name_style(guild)
-                if "avatar" in keys:
-                    await me.edit(avatar = None)
-                    view.avatar_url = None
-                if "banner" in keys:
-                    await me.edit(banner = None)
-                    view.banner_url = None
-                if "biography" in keys:
-                    await me.edit(bio = None)
-                    view.biography = None
-            except Exception:
-                await send_bad_operation(confirmation_interaction, title = f"reset {target}")
-                raise
-            finally:
-                view.update_pages()
-                if view.message:
-                    await view.message.edit(view = view)
-
-            await confirmation_interaction.delete_original_response()
-
-        async def deny(confirmation_interaction : Interaction) -> None:
-            await confirmation_interaction.response.defer()
-            await confirmation_interaction.delete_original_response()
-
-        confirmation = Confirmation(
-            TextDisplay(
-                format_message(
-                    MessageType.warning,
-                    title    =  "Warning",
-                    subtitle = f"This will reset {target} to {"its" if choice != "all" else "their"} default state. This cannot be undone!",
-                    override = FormatOverride(prefix = False),
-                ),
-            ),
-            acceptance_label = "Reset",
-            denial_label     = "Cancel",
-            on_acceptance    = accept,
-            on_denial        = deny,
-        )
-
-        await interaction.response.send_message(view = confirmation, ephemeral = True)
-        confirmation.message = await interaction.original_response()
+        await _confirm_reset(interaction, self.view, keys, target)
 
 
 @final
@@ -417,6 +424,10 @@ class _ResetButton(Button["_PersonalizationView"]):
         if not self.view:
             return
 
+        if self.category == "Biography":
+            await _confirm_reset(interaction, self.view, {"biography"}, "biography")
+            return
+
         await interaction.response.send_modal(_ResetModal(self.view, self.category))
 
 
@@ -424,16 +435,18 @@ class _ResetButton(Button["_PersonalizationView"]):
 class _PersonalizationView(NamedPaginator):
     def __init__(
         self,
-        style      : DisplayNameStyle,
+        style             : DisplayNameStyle,
         *,
-        avatar_url : str | None,
-        banner_url : str | None,
-        biography  : str | None,
+        avatar_url        : str | None,
+        banner_url        : str | None,
+        biography         : str | None,
+        default_biography : str,
     ) -> None:
-        self.style      = style
-        self.avatar_url = avatar_url
-        self.banner_url = banner_url
-        self.biography  = biography
+        self.style             = style
+        self.avatar_url        = avatar_url
+        self.banner_url        = banner_url
+        self.biography         = biography
+        self.default_biography = default_biography
 
         self.font_select      = _FontSelect()
         self.effect_select    = _EffectSelect()
@@ -559,11 +572,12 @@ class _PersonalizationView(NamedPaginator):
             )
         )
 
+        biography = self.biography or self.default_biography
         txt_biography = (
             (
                 "**Biography**\n"
-                f">>> {self.biography}"
-            ) if self.biography else (
+                f">>> {biography}"
+            ) if biography else (
                 "**Biography**\n"
                 "No server biography is set."
             )
@@ -626,8 +640,9 @@ async def run_server_personalize(interaction : Interaction) -> None:
     if not guild:
         return
 
-    style     = await interaction.client.get_name_style(guild)
-    biography = await interaction.client.get_biography(guild)
+    style             = await interaction.client.get_name_style(guild)
+    biography         = await interaction.client.get_biography(guild, fallback = False)
+    default_biography = (await interaction.client.application_info()).description
 
     me = guild.me
     if not me:
@@ -638,9 +653,10 @@ async def run_server_personalize(interaction : Interaction) -> None:
 
     view = _PersonalizationView(
         style,
-        avatar_url = avatar.url if avatar else None,
-        banner_url = banner.url if banner else None,
-        biography  = biography,
+        avatar_url        = avatar.url if avatar else None,
+        banner_url        = banner.url if banner else None,
+        biography         = biography,
+        default_biography = default_biography,
     )
     await interaction.response.send_message(view = view, ephemeral = True)
     view.message = await interaction.original_response()
