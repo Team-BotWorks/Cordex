@@ -432,7 +432,7 @@ class _PersonalizationView(NamedPaginator):
         txt_biography = (
             (
                 "**Biography**\n"
-                f">>>> {self.biography}"
+                f">>> {self.biography}"
             ) if self.biography else (
                 "**Biography**\n"
                 "No server biography is set."
