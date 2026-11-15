@@ -1,4 +1,4 @@
 discord.py[voice]
 aiosqlite
 python-dotenv
-typing_extensions>=4.16.
+typing_extensions>=4.16.0
