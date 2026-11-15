@@ -329,7 +329,8 @@ class Cordex(BaseBot):
     @override
     async def setup_hook(self) -> None:
         if self.user:
-            log.info("Logging in as %s, %s", self.user.name, self.user.id)
+            log.info("Logging in as %s with user ID %s", self.user.name, self.user.id)
+            log.info("Serving %s guilds; %s users", len(self.guilds), len(self.users))
 
         self.developers = [user for developer_id in DEVELOPER_IDS if (user := await self.fetch_user(developer_id))]
 
