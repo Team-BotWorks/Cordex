@@ -2,7 +2,7 @@
 
 from typing import Literal, Self, final, override
 
-from discord import Color, HTTPException, SelectOption, TextStyle
+from discord import ButtonStyle, Color, HTTPException, SelectOption, TextStyle
 
 from bot import Interaction
 from bot.types import DisplayNameStyle
@@ -10,7 +10,7 @@ from bot.ui import (
     ActionRow,
     Button,
     ButtonSection,
-    Checkbox,
+    Confirmation,
     FileUpload,
     Label,
     Modal,
@@ -27,10 +27,12 @@ from constants import (
 )
 from core.exceptions import send_bad_argument, send_bad_operation
 from core.paginator import NamedPaginator, PageData
+from core.responses import FormatOverride, MessageType, format_message
 
 from ._base import COLOR_PATTERN, find_violation
 
 type _ImageTypes = Literal["avatar", "banner"]
+type _Category   = Literal["Name Style", "Avatar & Banner", "Biography"]
 
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 # /server personalize Logic
@@ -154,21 +156,14 @@ class _ImageModal(Modal):
         self.view   = view
         self.target = target
 
-        self._upload = FileUpload[Self](required = False)
+        self._upload = FileUpload[Self]()
         self.upload  = Label[Self](
             text        = target.title(),
             description = f"The new {target} image (PNG, JPG, or GIF).",
             component   = self._upload,
         )
 
-        self._reset = Checkbox[Self]()
-        self.reset  = Label[Self](
-            text        =  "Reset",
-            description = f"Whether to remove the current {target} instead of uploading one.",
-            component   = self._reset,
-        )
-
-        self.add_items(self.upload, self.reset)
+        self.add_item(self.upload)
 
     @override
     async def on_submit(self, interaction : Interaction) -> None:
@@ -180,19 +175,10 @@ class _ImageModal(Modal):
         if not me:
             return
 
-        reset      = self._reset.value
-        attachment = self._upload.values[0] if self._upload.values else None
-
-        if not reset and attachment is None:
-            await send_bad_argument(
-                interaction,
-                title    = f"set {self.target}",
-                subtitle =  "One option must be selected.",
-            )
-            return
+        attachment = self._upload.values[0]
 
         try:
-            data = await attachment.read() if attachment is not None and not reset else None
+            data = await attachment.read()
             if self.target == "avatar":
                 member = await me.edit(avatar = data)
             else:
@@ -295,6 +281,146 @@ class _BioButton(Button["_PersonalizationView"]):
 
 
 @final
+class _ResetModal(Modal):
+    def __init__(self, view : _PersonalizationView, category : _Category) -> None:
+        super().__init__(title = f"Reset {category}")
+        self.view     = view
+        self.category = category
+
+        candidates : list[tuple[str, str, bool]]
+
+        match category:
+            case "Name Style":
+                candidates = [
+                    ("font",   "Font",   view.style.font   != DisplayNameFont.default),
+                    ("effect", "Effect", view.style.effect != DisplayNameEffect.solid),
+                    ("colors", "Colors", bool(view.style.colors)),
+                ]
+            case "Avatar & Banner":
+                candidates = [
+                    ("avatar", "Avatar", bool(view.avatar_url)),
+                    ("banner", "Banner", bool(view.banner_url)),
+                ]
+            case "Biography":
+                candidates = [
+                    ("biography", "Biography", bool(view.biography)),
+                ]
+
+        self._options = {key : label for key, label, configured in candidates if configured}
+
+        options = [SelectOption(label = label, value = key) for key, label in self._options.items()]
+        if len(options) > 1:
+            options.append(
+                SelectOption(
+                    label       = f"All {category} Settings",
+                    value       =  "all",
+                    description = f"Reset every configured {category.lower()} setting at once.",
+                ),
+            )
+
+        self._selection = Select[Self](placeholder = "Select what to reset...", options = options)
+        self.selection  = Label[Self](
+            text        =  "Setting",
+            description = f"Choose which {category.lower()} setting to reset to its default.",
+            component   = self._selection,
+        )
+
+        self.add_item(self.selection)
+
+    @override
+    async def on_submit(self, interaction : Interaction) -> None:
+        guild = interaction.guild
+        if not guild:
+            return
+
+        me = guild.me
+        if not me:
+            return
+
+        view     = self.view
+        category = self.category
+        choice   = self._selection.values[0]
+
+        keys   = set(self._options) if choice == "all" else {choice}
+        target = f"all {category.lower()} settings" if choice == "all" else self._options[choice].lower()
+
+        async def accept(confirmation_interaction : Interaction) -> None:
+            await confirmation_interaction.response.defer()
+
+            client = confirmation_interaction.client
+
+            try:
+                if keys & {"font", "effect", "colors"}:
+                    font   = DisplayNameFont.default if "font"   in keys else view.style.font
+                    effect = DisplayNameEffect.solid if "effect" in keys else view.style.effect
+                    colors = []                      if "colors" in keys else list(view.style.colors)
+
+                    if effect not in {
+                        DisplayNameEffect.prism,
+                        DisplayNameEffect.gradient,
+                        DisplayNameEffect.gummy,
+                    }:
+                        colors = colors[:1]
+
+                    await client.set_name_style(guild, font = font, effect = effect, colors = colors)
+                    view.style = await client.get_name_style(guild)
+                if "avatar" in keys:
+                    await me.edit(avatar = None)
+                    view.avatar_url = None
+                if "banner" in keys:
+                    await me.edit(banner = None)
+                    view.banner_url = None
+                if "biography" in keys:
+                    await me.edit(bio = None)
+                    view.biography = None
+            except Exception:
+                await send_bad_operation(confirmation_interaction, title = f"reset {target}")
+                raise
+            finally:
+                view.update_pages()
+                if view.message:
+                    await view.message.edit(view = view)
+
+            await confirmation_interaction.delete_original_response()
+
+        async def deny(confirmation_interaction : Interaction) -> None:
+            await confirmation_interaction.response.defer()
+            await confirmation_interaction.delete_original_response()
+
+        confirmation = Confirmation(
+            TextDisplay(
+                format_message(
+                    MessageType.warning,
+                    title    =  "Warning",
+                    subtitle = f"This will reset {target} to {"its" if choice != "all" else "their"} default state. This cannot be undone!",
+                    override = FormatOverride(prefix = False),
+                ),
+            ),
+            acceptance_label = "Reset",
+            denial_label     = "Cancel",
+            on_acceptance    = accept,
+            on_denial        = deny,
+        )
+
+        await interaction.response.send_message(view = confirmation, ephemeral = True)
+        confirmation.message = await interaction.original_response()
+
+
+@final
+class _ResetButton(Button["_PersonalizationView"]):
+    def __init__(self, category : _Category) -> None:
+        super().__init__(label = "Reset", style = ButtonStyle.red)
+        self.category : _Category = category
+
+    @override
+    async def callback(self, interaction : Interaction) -> None:
+        if not self.view:
+            return
+
+        await interaction.response.send_modal(_ResetModal(self.view, self.category))
+
+
+@final
 class _PersonalizationView(NamedPaginator):
     def __init__(
         self,
@@ -315,6 +441,10 @@ class _PersonalizationView(NamedPaginator):
         self.avatar_button    = _ImageButton("avatar")
         self.banner_button    = _ImageButton("banner")
         self.biography_button = _BioButton()
+
+        self.style_reset_button     = _ResetButton("Name Style")
+        self.media_reset_button     = _ResetButton("Avatar & Banner")
+        self.biography_reset_button = _ResetButton("Biography")
 
         initial_pages = [
             PageData(
@@ -439,13 +569,21 @@ class _PersonalizationView(NamedPaginator):
             )
         )
 
+        self.style_reset_button.disabled = not (
+            self.style.font   != DisplayNameFont.default
+            or self.style.effect != DisplayNameEffect.solid
+            or self.style.colors
+        )
+        self.media_reset_button.disabled     = not (self.avatar_url or self.banner_url)
+        self.biography_reset_button.disabled = not self.biography
+
         self.pages = [
             PageData(
                 name        = "Name Style",
                 emoji       = MEMBER_EMOJI,
                 description = "Personalize my display name style's font, effect, and colors.",
                 content     = [
-                    "# Name Style",
+                    ButtonSection("# Name Style", button = self.style_reset_button),
                     TextDisplay("**Font**"),
                     ActionRow(self.font_select),
                     TextDisplay("**Effect**"),
@@ -458,7 +596,7 @@ class _PersonalizationView(NamedPaginator):
                 emoji       = MEDIA_EMOJI,
                 description = "Personalize my avatar and banner.",
                 content     = [
-                    "# Avatar & Banner",
+                    ButtonSection("# Avatar & Banner", button = self.media_reset_button),
                     ButtonSection(txt_avatar, button = self.avatar_button),
                     ButtonSection(txt_banner, button = self.banner_button),
                 ],
@@ -468,7 +606,7 @@ class _PersonalizationView(NamedPaginator):
                 emoji       = QUERY_EMOJI,
                 description = "Personalize my biography.",
                 content     = [
-                    "# Biography",
+                    ButtonSection("# Biography", button = self.biography_reset_button),
                     ButtonSection(txt_biography, button = self.biography_button),
                 ],
             ),
