@@ -20,7 +20,6 @@ class LockdownEnforcer(Cog):
     """Enforces lockdowns by ensuring specific channel permissions are configured properly."""
 
     def __init__(self, bot : Cordex) -> None:
-        super().__init__()
         self.bot = bot
         self._loop_lockdownenforce.start()
 

@@ -21,7 +21,6 @@ class Fun(Cog):
     """Who doesn't like a little bit of fun? Responds to messages greeting the bot, and does a rare, joke rejection for some commands."""
 
     def __init__(self, bot : Cordex) -> None:
-        super().__init__()
         self.bot = bot
 
         self.rejected_members : dict[Member | User, tuple[str, int]] = {}

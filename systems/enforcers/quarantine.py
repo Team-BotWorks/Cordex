@@ -18,7 +18,6 @@ class QuarantineEnforcer(Cog):
     """Enforces quarantines by ensuring specific channel and role permissions are configured properly and quarantine role members remain in proper state."""
 
     def __init__(self, bot : Cordex) -> None:
-        super().__init__()
         self.bot = bot
         self._loop_quarantineenforce.start()
 

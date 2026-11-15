@@ -29,7 +29,6 @@ from .sync import run_botowner_sync
 @final
 class BotOwnerCommands(Cog):
     def __init__(self, bot : Cordex) -> None:
-        super().__init__()
         self.bot = bot
 
     @override

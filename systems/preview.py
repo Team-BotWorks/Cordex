@@ -52,7 +52,6 @@ class Preview(Cog):
     """Provides message previews for Discord message links."""
 
     def __init__(self, bot : Cordex) -> None:
-        super().__init__()
         self.bot = bot
 
     async def _process_message_preview(self, message : Message) -> None:

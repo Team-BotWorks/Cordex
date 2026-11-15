@@ -16,7 +16,6 @@ class StyleEnforcer(Cog):
     """Sets the bot's name style upon joining a guild."""
 
     def __init__(self, bot : Cordex) -> None:
-        super().__init__()
         self.bot = bot
 
     @Cog.listener("on_guild_join")

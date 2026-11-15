@@ -16,7 +16,6 @@ class CasesEnforcer(Cog):
     """Deletes cases when the bot leaves a guild or when the database guilds don't match the current ones (possibly due to the bot leaving while offline)."""
 
     def __init__(self, bot : Cordex) -> None:
-        super().__init__()
         self.bot = bot
         self._loop_caseenforce.start()
 

@@ -49,7 +49,6 @@ class ErrorLogger(Cog):
     """Logs when Cordex errors."""
 
     def __init__(self, bot : Cordex) -> None:
-        super().__init__()
         self.bot = bot
         self.bot.tree.error(self._command_error_handler)
 

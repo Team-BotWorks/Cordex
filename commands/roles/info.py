@@ -4,7 +4,6 @@ from discord import (
     AllowedMentions,
     Asset,
     Member,
-    Message,
     Role,
 )
 from discord.utils import format_dt
@@ -104,8 +103,6 @@ async def run_role_info(interaction : Interaction, role : Role) -> None:
     class InfoView(InteractiveView):
         def __init__(self) -> None:
             super().__init__()
-            self.message : Message | None = None
-
             container = Container[Self](
                 TextDisplay(f"### {mention} | {role.id}"),
                 color = role.color if role.color.value else COLOR_GREY,

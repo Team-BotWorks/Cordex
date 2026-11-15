@@ -23,7 +23,6 @@ class MessageDeleteLogging(Cog):
     """Logs message deletion for guilds with it enabled."""
 
     def __init__(self, bot : Cordex) -> None:
-        super().__init__()
         self.bot = bot
 
     @Cog.listener("on_message_delete")

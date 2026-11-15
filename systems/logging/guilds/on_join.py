@@ -24,7 +24,6 @@ class GuildJoinLogging(Cog):
     """Logs when the bot is added to a guild."""
 
     def __init__(self, bot : Cordex) -> None:
-        super().__init__()
         self.bot = bot
 
     @Cog.listener("on_guild_join")

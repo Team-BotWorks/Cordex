@@ -16,7 +16,6 @@ class RestrictionEnforcer(Cog):
     """Removes command restrictions when the bot leaves a guild, when a command no longer exists, or when the database holds stale entries (possibly due to the bot leaving or being updated while offline)."""
 
     def __init__(self, bot : Cordex) -> None:
-        super().__init__()
         self.bot = bot
         self._loop_restrictionenforce.start()
 
