@@ -17,7 +17,7 @@ from unicodedata import normalize as unicode_normalize
 COLOR_PATTERN = regex_compile(r"^[0-9a-fA-F]{6}(?:-[0-9a-fA-F]{6}){0,4}$")
 
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
-# Biography
+# Biograph
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
 BLOCKED_TERMS = frozenset(

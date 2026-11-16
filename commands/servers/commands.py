@@ -371,9 +371,6 @@ class _CategorySelect(Select[UnnamedPaginator]):
         ]
 
         for cog in bot.cogs.values():
-
-            # ⸻ Check that it's a GroupCog, and that the cog name is a str.
-
             if not isinstance(cog, GroupCog) or not isinstance(name := cog.__cog_group_name__, str):
                 continue
 
@@ -448,14 +445,8 @@ async def run_server_commands(interaction : Interaction) -> None:
     interaction : `Interaction`
         The interaction context to run the command with.
     """
-    await interaction.response.defer(ephemeral = True)
-
-    # ⸻ Grab the commands from the cache and then sort them.
-
     commands = [command for command in interaction.client.tree.walk_commands() if is_restrictable(command)]
     commands.sort(key = lambda c : c.qualified_name)
-
-    # ⸻ Build the view,
 
     state = _State(f"# {HORIZONTAL_SETTINGS} All Commands", commands)
 
@@ -482,6 +473,6 @@ async def run_server_commands(interaction : Interaction) -> None:
         ),
     )
 
-    # ⸻ ...and then send it.
-
-    view.message = await interaction.followup.send(view = view, ephemeral = True)
+    view.user = interaction.user
+    await interaction.response.send_message(view = view)
+    view.message = await interaction.original_response()

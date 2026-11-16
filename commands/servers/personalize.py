@@ -658,5 +658,6 @@ async def run_server_personalize(interaction : Interaction) -> None:
         biography         = biography,
         default_biography = default_biography,
     )
-    await interaction.response.send_message(view = view, ephemeral = True)
+    view.user = interaction.user
+    await interaction.response.send_message(view = view)
     view.message = await interaction.original_response()

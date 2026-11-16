@@ -715,5 +715,6 @@ async def run_server_configure(interaction : Interaction) -> None:
         enforce_roles    = enforce_roles,
         preview          = preview,
     )
-    await interaction.response.send_message(view = view, ephemeral = True)
+    view.user = interaction.user
+    await interaction.response.send_message(view = view)
     view.message = await interaction.original_response()
