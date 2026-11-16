@@ -2,7 +2,7 @@ from asyncio import gather, sleep
 from re import compile as regex_compile
 from typing import Self, final
 
-from discord import AllowedMentions, Forbidden, MediaGalleryItem, Message
+from discord import AllowedMentions, Forbidden, MediaGalleryItem, Message, NotFound
 from discord.abc import Messageable
 from discord.ext.commands import Cog
 
@@ -57,12 +57,11 @@ class Preview(Cog):
     async def _process_message_preview(self, message : Message) -> None:
         content = message.content
         author  = message.author
-        guild   = message.guild
 
         if author.bot:
             return
 
-        if guild:
+        if guild := message.guild:
             wants_preview = await self.bot.config(guild).get_whether_messages_preview()
             if not wants_preview:
                 return
@@ -71,15 +70,18 @@ class Preview(Cog):
             channel_id = int(match.group(2))
             message_id = int(match.group(3))
 
-            if not isinstance(
-                target_channel := self.bot.get_channel(channel_id) or await self.bot.fetch_channel(channel_id),
-                Messageable,
-            ):
+            try:
+                if not isinstance(
+                    target_channel := self.bot.get_channel(channel_id) or await self.bot.fetch_channel(channel_id),
+                    Messageable,
+                ):
+                    continue
+            except NotFound:
                 continue
 
             try:
                 target_message = await target_channel.fetch_message(message_id)
-            except Forbidden:
+            except Forbidden, NotFound:
                 continue
             else:
                 if not target_message.content and not target_message.attachments:  # ⸻ Message has no content or attachments. Perhaps an embed?
@@ -89,8 +91,8 @@ class Preview(Cog):
                 *(
                     attachment.to_file() for attachment in [
                         attachment for attachment in target_message.attachments
-                        if attachment.content_type and
-                        not attachment.content_type.startswith(("image/", "video/"))
+                        if attachment.content_type
+                        and not attachment.content_type.startswith(("image/", "video/"))
                     ]
                 ),
             )
@@ -99,6 +101,7 @@ class Preview(Cog):
                 match.group(0),
                 [file.filename for file in files],
             )
+
             if i == 0:
                 async with message.channel.typing():
                     await sleep(0.5)
