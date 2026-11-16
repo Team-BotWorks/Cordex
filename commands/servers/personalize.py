@@ -2,7 +2,7 @@
 
 from typing import Literal, Self, final, override
 
-from discord import ButtonStyle, Color, HTTPException, SelectOption, TextStyle
+from discord import Color, HTTPException, SelectOption, TextStyle
 
 from bot import Interaction
 from bot.types import DisplayNameStyle
@@ -10,7 +10,6 @@ from bot.ui import (
     ActionRow,
     Button,
     ButtonSection,
-    Confirmation,
     FileUpload,
     Label,
     Modal,
@@ -27,12 +26,16 @@ from constants import (
 )
 from core.exceptions import send_bad_argument, send_bad_operation
 from core.paginator import NamedPaginator, PageData
-from core.responses import FormatOverride, MessageType, format_message
 
-from ._base import COLOR_PATTERN, find_violation
+from ._base import (
+    COLOR_PATTERN,
+    ResetButton,
+    ResetCandidate,
+    ResetHandler,
+    find_violation,
+)
 
 type _ImageTypes = Literal["avatar", "banner"]
-type _Category   = Literal["Name Style", "Avatar & Banner", "Biography"]
 
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 # /server personalize Logic
@@ -280,157 +283,6 @@ class _BioButton(Button["_PersonalizationView"]):
         await interaction.response.send_modal(_BioModal(self.view))
 
 
-async def _confirm_reset(
-    interaction : Interaction,
-    view        : _PersonalizationView,
-    keys        : set[str],
-    target      : str,
-) -> None:
-    guild = interaction.guild
-    if not guild:
-        return
-
-    me = guild.me
-    if not me:
-        return
-
-    async def accept(confirmation_interaction : Interaction) -> None:
-        await confirmation_interaction.response.defer()
-
-        client = confirmation_interaction.client
-
-        try:
-            if keys & {"font", "effect", "colors"}:
-                font   = DisplayNameFont.default if "font"   in keys else view.style.font
-                effect = DisplayNameEffect.solid if "effect" in keys else view.style.effect
-                colors = []                      if "colors" in keys else list(view.style.colors)
-
-                if effect not in {
-                    DisplayNameEffect.prism,
-                    DisplayNameEffect.gradient,
-                    DisplayNameEffect.gummy,
-                }:
-                    colors = colors[:1]
-
-                await client.set_name_style(guild, font = font, effect = effect, colors = colors)
-                view.style = await client.get_name_style(guild)
-            if "avatar" in keys:
-                await me.edit(avatar = None)
-                view.avatar_url = None
-            if "banner" in keys:
-                await me.edit(banner = None)
-                view.banner_url = None
-            if "biography" in keys:
-                await me.edit(bio = None)
-                view.biography = None
-        except Exception:
-            await send_bad_operation(confirmation_interaction, title = f"reset {target}")
-            raise
-        finally:
-            view.update_pages()
-            if view.message:
-                await view.message.edit(view = view)
-
-        await confirmation_interaction.delete_original_response()
-
-    async def deny(confirmation_interaction : Interaction) -> None:
-        await confirmation_interaction.response.defer()
-        await confirmation_interaction.delete_original_response()
-
-    confirmation = Confirmation(
-        TextDisplay(
-            format_message(
-                MessageType.warning,
-                title    =  "Warning",
-                subtitle = f"This will reset {target} to {"its" if len(keys) == 1 else "their"} default state. This cannot be undone!",
-                override = FormatOverride(prefix = False),
-            ),
-        ),
-        acceptance_label = "Reset",
-        denial_label     = "Cancel",
-        on_acceptance    = accept,
-        on_denial        = deny,
-    )
-
-    await interaction.response.send_message(view = confirmation, ephemeral = True)
-    confirmation.message = await interaction.original_response()
-
-
-@final
-class _ResetModal(Modal):
-    def __init__(
-        self,
-        view     : _PersonalizationView,
-        category : Literal["Name Style", "Avatar & Banner"],
-    ) -> None:
-        super().__init__(title = f"Reset {category}")
-        self.view     = view
-        self.category = category
-
-        candidates : list[tuple[str, str, bool]]
-
-        match category:
-            case "Name Style":
-                candidates = [
-                    ("font",   "Font",   view.style.font   != DisplayNameFont.default),
-                    ("effect", "Effect", view.style.effect != DisplayNameEffect.solid),
-                    ("colors", "Colors", bool(view.style.colors)),
-                ]
-            case "Avatar & Banner":
-                candidates = [
-                    ("avatar", "Avatar", bool(view.avatar_url)),
-                    ("banner", "Banner", bool(view.banner_url)),
-                ]
-
-        self._options = {key : label for key, label, configured in candidates if configured}
-
-        options = [SelectOption(label = label, value = key) for key, label in self._options.items()]
-        if len(options) > 1:
-            options.append(
-                SelectOption(
-                    label       = f"All {category} Settings",
-                    value       =  "all",
-                    description = f"Reset every configured {category.lower()} setting at once.",
-                ),
-            )
-
-        self._selection = Select[Self](placeholder = "Select what to reset...", options = options)
-        self.selection  = Label[Self](
-            text        =  "Setting",
-            description = f"Choose which {category.lower()} setting to reset to its default.",
-            component   = self._selection,
-        )
-
-        self.add_item(self.selection)
-
-    @override
-    async def on_submit(self, interaction : Interaction) -> None:
-        choice = self._selection.values[0]
-
-        keys   = set(self._options) if choice == "all" else {choice}
-        target = f"all {self.category.lower()} settings" if choice == "all" else self._options[choice].lower()
-
-        await _confirm_reset(interaction, self.view, keys, target)
-
-
-@final
-class _ResetButton(Button["_PersonalizationView"]):
-    def __init__(self, category : _Category) -> None:
-        super().__init__(label = "Reset", style = ButtonStyle.red)
-        self.category : _Category = category
-
-    @override
-    async def callback(self, interaction : Interaction) -> None:
-        if not self.view:
-            return
-
-        if self.category == "Biography":
-            await _confirm_reset(interaction, self.view, {"biography"}, "biography")
-            return
-
-        await interaction.response.send_modal(_ResetModal(self.view, self.category))
-
-
 @final
 class _PersonalizationView(NamedPaginator):
     def __init__(
@@ -455,9 +307,15 @@ class _PersonalizationView(NamedPaginator):
         self.banner_button    = _ImageButton("banner")
         self.biography_button = _BioButton()
 
-        self.style_reset_button     = _ResetButton("Name Style")
-        self.media_reset_button     = _ResetButton("Avatar & Banner")
-        self.biography_reset_button = _ResetButton("Biography")
+        self.reset_handler = ResetHandler(
+            candidates = self._reset_candidates,
+            apply      = self._reset_apply,
+            refresh    = self.update_pages,
+        )
+
+        self.style_reset_button     = ResetButton("Name Style", self.reset_handler)
+        self.media_reset_button     = ResetButton("Avatar & Banner", self.reset_handler)
+        self.biography_reset_button = ResetButton("Biography", self.reset_handler)
 
         initial_pages = [
             PageData(
@@ -482,6 +340,59 @@ class _PersonalizationView(NamedPaginator):
 
         super().__init__(initial_pages, container = True)
         self.update_pages()
+
+    def _reset_candidates(self, category : str) -> list[ResetCandidate]:
+        match category:
+            case "Name Style":
+                return [
+                    ("font",   "Font",   self.style.font   != DisplayNameFont.default),
+                    ("effect", "Effect", self.style.effect != DisplayNameEffect.solid),
+                    ("colors", "Colors", bool(self.style.colors)),
+                ]
+            case "Avatar & Banner":
+                return [
+                    ("avatar", "Avatar", bool(self.avatar_url)),
+                    ("banner", "Banner", bool(self.banner_url)),
+                ]
+            case "Biography":
+                return [("biography", "Biography", bool(self.biography))]
+            case _:
+                return []
+
+    async def _reset_apply(self, interaction : Interaction, keys : set[str]) -> None:
+        guild = interaction.guild
+        if not guild:
+            return
+
+        me = guild.me
+        if not me:
+            return
+
+        client = interaction.client
+
+        if keys & {"font", "effect", "colors"}:
+            font   = DisplayNameFont.default if "font"   in keys else self.style.font
+            effect = DisplayNameEffect.solid if "effect" in keys else self.style.effect
+            colors = []                      if "colors" in keys else list(self.style.colors)
+
+            if effect not in {
+                DisplayNameEffect.prism,
+                DisplayNameEffect.gradient,
+                DisplayNameEffect.gummy,
+            }:
+                colors = colors[:1]
+
+            await client.set_name_style(guild, font = font, effect = effect, colors = colors)
+            self.style = await client.get_name_style(guild)
+        if "avatar" in keys:
+            await me.edit(avatar = None)
+            self.avatar_url = None
+        if "banner" in keys:
+            await me.edit(banner = None)
+            self.banner_url = None
+        if "biography" in keys:
+            await me.edit(bio = None)
+            self.biography = None
 
     async def apply(
         self,

@@ -1,8 +1,8 @@
 # pyright: reportIncompatibleMethodOverride = false
 
-from typing import Literal, Self, final, override
+from typing import Self, final, override
 
-from discord import ButtonStyle, ChannelType, Guild, Object, SelectOption, TextChannel
+from discord import ButtonStyle, ChannelType, Guild, Object, TextChannel
 
 from bot import Interaction
 from bot.ui import (
@@ -11,11 +11,9 @@ from bot.ui import (
     ButtonSection,
     ChannelSelect,
     Checkbox,
-    Confirmation,
     Label,
     Modal,
     RoleSelect,
-    Select,
     TextDisplay,
 )
 from constants import (
@@ -28,7 +26,8 @@ from constants import (
 from core.exceptions import send_bad_argument, send_bad_operation
 from core.moderation import QuarantineManager
 from core.paginator import NamedPaginator, PageData
-from core.responses import FormatOverride, MessageType, format_message
+
+from ._base import ResetButton, ResetCandidate, ResetHandler
 
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 # /server configure Logic
@@ -364,142 +363,6 @@ class _ModerationQuarantineEnforceButton(Button["_ConfigurationView"]):
 
 
 @final
-class _ResetModal(Modal):
-    def __init__(
-        self,
-        view     : _ConfigurationView,
-        category : Literal["Messages", "Moderation"],
-    ) -> None:
-        super().__init__(title = f"Reset {category}")
-        self.view     = view
-        self.category = category
-
-        candidates = (
-            (
-                ("edit",    "Edit Logging Channel",   bool(view.edit_id)),
-                ("delete",  "Delete Logging Channel", bool(view.delete_id)),
-                ("preview", "Link Previews",          view.preview),
-            ) if category == "Messages" else (
-                ("logging",          "Logging Channel",  bool(view.logging_id)),
-                ("quarantine",       "Quarantine Role",  bool(view.quarantine_id)),
-                ("enforce_channels", "Enforce Channels", view.enforce_channels),
-                ("enforce_roles",    "Enforce Roles",    view.enforce_roles),
-            )
-        )
-
-        self._options = {key : label for key, label, configured in candidates if configured}
-
-        options = [SelectOption(label = label, value = key) for key, label in self._options.items()]
-        if len(options) > 1:
-            options.append(
-                SelectOption(
-                    label       = f"All {category} Settings",
-                    value       =  "all",
-                    description = f"Reset every configured {category.lower()} setting at once.",
-                ),
-            )
-
-        self._selection = Select[Self](placeholder = "Select what to reset...", options = options)
-        self.selection  = Label[Self](
-            text        =  "Setting",
-            description = f"Choose which {category.lower()} setting to reset to its default.",
-            component   = self._selection,
-        )
-
-        self.add_item(self.selection)
-
-    @override
-    async def on_submit(self, interaction : Interaction) -> None:
-        guild = interaction.guild
-        if not guild:
-            return
-
-        view     = self.view
-        category = self.category
-        choice   = self._selection.values[0]
-
-        keys   = set(self._options) if choice == "all" else {choice}
-        target = f"all {category.lower()} settings" if choice == "all" else self._options[choice].lower()
-
-        async def accept(confirmation_interaction : Interaction) -> None:
-            await confirmation_interaction.response.defer()
-
-            config = confirmation_interaction.client.config(guild)
-
-            try:
-                if "edit" in keys:
-                    await config.set_messages_edit_logging_channel(None)
-                    view.edit_id                    = None
-                    view.edit_select.default_values = []
-                if "delete" in keys:
-                    await config.set_messages_delete_logging_channel(None)
-                    view.delete_id                    = None
-                    view.delete_select.default_values = []
-                if "preview" in keys:
-                    await config.set_whether_messages_preview(False)
-                    view.preview = False
-                if "logging" in keys:
-                    await config.set_moderation_logging_channel(None)
-                    view.logging_id                    = None
-                    view.logging_select.default_values = []
-                if "quarantine" in keys:
-                    await config.set_moderation_quarantine_role(None)
-                    view.quarantine_id                    = None
-                    view.quarantine_select.default_values = []
-                if "enforce_channels" in keys:
-                    await config.set_whether_moderation_quarantine_enforce_channels(False)
-                    view.enforce_channels = False
-                if "enforce_roles" in keys:
-                    await config.set_whether_moderation_quarantine_enforce_roles(False)
-                    view.enforce_roles = False
-            except Exception:
-                await send_bad_operation(confirmation_interaction, title = f"reset {target}")
-                raise
-            finally:
-                view.update_pages()
-                if view.message:
-                    await view.message.edit(view = view)
-
-            await confirmation_interaction.delete_original_response()
-
-        async def deny(confirmation_interaction : Interaction) -> None:
-            await confirmation_interaction.response.defer()
-            await confirmation_interaction.delete_original_response()
-
-        confirmation = Confirmation(
-            TextDisplay(
-                format_message(
-                    MessageType.warning,
-                    title    =  "Warning",
-                    subtitle = f"This will reset {target} to {"its" if choice != "all" else "their"} default state. This cannot be undone!",
-                    override = FormatOverride(prefix = False),
-                ),
-            ),
-            acceptance_label = "Reset",
-            denial_label     = "Cancel",
-            on_acceptance    = accept,
-            on_denial        = deny,
-        )
-
-        await interaction.response.send_message(view = confirmation, ephemeral = True)
-        confirmation.message = await interaction.original_response()
-
-
-@final
-class _ResetButton(Button["_ConfigurationView"]):
-    def __init__(self, category : Literal["Messages", "Moderation"]) -> None:
-        super().__init__(label = "Reset", style = ButtonStyle.red)
-        self.category : Literal["Messages", "Moderation"] = category
-
-    @override
-    async def callback(self, interaction : Interaction) -> None:
-        if not self.view:
-            return
-
-        await interaction.response.send_modal(_ResetModal(self.view, self.category))
-
-
-@final
 class _ConfigurationView(NamedPaginator):
     def __init__(
         self,
@@ -522,14 +385,20 @@ class _ConfigurationView(NamedPaginator):
         self.enforce_roles    = enforce_roles
         self.preview          = preview
 
+        self.reset_handler = ResetHandler(
+            candidates = self._reset_candidates,
+            apply      = self._reset_apply,
+            refresh    = self.update_pages,
+        )
+
         self.edit_select               = _MessagesEditSelect()
         self.delete_select             = _MessagesDeleteSelect()
         self.logging_select            = _ModerationLoggingSelect()
         self.quarantine_select         = _ModerationQuarantineRoleSelect()
         self.quarantine_enforce_button = _ModerationQuarantineEnforceButton()
         self.preview_button            = _MessagesPreviewButton(enabled = self.preview)
-        self.messages_reset_button     = _ResetButton("Messages")
-        self.moderation_reset_button   = _ResetButton("Moderation")
+        self.messages_reset_button     = ResetButton("Messages", self.reset_handler)
+        self.moderation_reset_button   = ResetButton("Moderation", self.reset_handler)
 
         if self.edit_id:
             self.edit_select.default_values = [Object(id = self.edit_id)]
@@ -557,6 +426,53 @@ class _ConfigurationView(NamedPaginator):
 
         super().__init__(initial_pages, container = True)
         self.update_pages()
+
+    def _reset_candidates(self, category : str) -> list[ResetCandidate]:
+        match category:
+            case "Messages":
+                return [
+                    ("edit",    "Edit Logging Channel",   bool(self.edit_id)),
+                    ("delete",  "Delete Logging Channel", bool(self.delete_id)),
+                    ("preview", "Link Previews",          self.preview),
+                ]
+            case "Moderation":
+                return [
+                    ("logging",          "Logging Channel",  bool(self.logging_id)),
+                    ("quarantine",       "Quarantine Role",  bool(self.quarantine_id)),
+                    ("enforce_channels", "Enforce Channels", self.enforce_channels),
+                    ("enforce_roles",    "Enforce Roles",    self.enforce_roles),
+                ]
+            case _:
+                return []
+
+    async def _reset_apply(self, interaction : Interaction, keys : set[str]) -> None:
+        config = interaction.client.config(self.guild)
+
+        if "edit" in keys:
+            await config.set_messages_edit_logging_channel(None)
+            self.edit_id                    = None
+            self.edit_select.default_values = []
+        if "delete" in keys:
+            await config.set_messages_delete_logging_channel(None)
+            self.delete_id                    = None
+            self.delete_select.default_values = []
+        if "preview" in keys:
+            await config.set_whether_messages_preview(False)
+            self.preview = False
+        if "logging" in keys:
+            await config.set_moderation_logging_channel(None)
+            self.logging_id                    = None
+            self.logging_select.default_values = []
+        if "quarantine" in keys:
+            await config.set_moderation_quarantine_role(None)
+            self.quarantine_id                    = None
+            self.quarantine_select.default_values = []
+        if "enforce_channels" in keys:
+            await config.set_whether_moderation_quarantine_enforce_channels(False)
+            self.enforce_channels = False
+        if "enforce_roles" in keys:
+            await config.set_whether_moderation_quarantine_enforce_roles(False)
+            self.enforce_roles = False
 
     def update_pages(self) -> None:
         edit = self.guild.get_channel(self.edit_id) if self.edit_id else None

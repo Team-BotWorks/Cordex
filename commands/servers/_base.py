@@ -1,23 +1,162 @@
+# pyright: reportIncompatibleMethodOverride = false
+
+from collections.abc import Awaitable, Callable, Sequence
+from dataclasses import dataclass
 from re import IGNORECASE
 from re import compile as regex_compile
 from re import escape as regex_escape
-from typing import cast
+from typing import Self, cast, final, override
 from unicodedata import category as unicode_category
 from unicodedata import combining as unicode_combining
 from unicodedata import normalize as unicode_normalize
+
+from discord import ButtonStyle, SelectOption
+
+from bot import Interaction
+from bot.ui import Button, Confirmation, Label, Modal, Select, TextDisplay
+from core.exceptions import send_bad_operation
+from core.paginator import NamedPaginator
+from core.responses import FormatOverride, MessageType, format_message
 
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 # Server Commands Base
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
+# Reset Stuff
+# ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
+
+type ResetCandidate = tuple[str, str, bool]
+
+
+@final
+@dataclass(frozen = True, slots = True)
+class ResetHandler:
+    candidates : Callable[[str], Sequence[ResetCandidate]]
+    apply      : Callable[[Interaction, set[str]], Awaitable[None]]
+    refresh    : Callable[[], None]
+
+
+async def _confirm_reset(
+    interaction : Interaction,
+    view        : NamedPaginator,
+    handler     : ResetHandler,
+    keys        : set[str],
+    target      : str,
+) -> None:
+    async def accept(confirmation_interaction : Interaction) -> None:
+        await confirmation_interaction.response.defer()
+
+        try:
+            await handler.apply(confirmation_interaction, keys)
+        except Exception:
+            await send_bad_operation(confirmation_interaction, title = f"reset {target}")
+            raise
+        finally:
+            handler.refresh()
+            if view.message:
+                await view.message.edit(view = view)
+
+        await confirmation_interaction.delete_original_response()
+
+    async def deny(confirmation_interaction : Interaction) -> None:
+        await confirmation_interaction.response.defer()
+        await confirmation_interaction.delete_original_response()
+
+    confirmation = Confirmation(
+        TextDisplay(
+            format_message(
+                MessageType.warning,
+                title    =  "Warning",
+                subtitle = f"This will reset {target} to {"its" if len(keys) == 1 else "their"} default state. This cannot be undone!",
+                override = FormatOverride(prefix = False),
+            ),
+        ),
+        acceptance_label = "Reset",
+        denial_label     = "Cancel",
+        on_acceptance    = accept,
+        on_denial        = deny,
+    )
+
+    await interaction.response.send_message(view = confirmation, ephemeral = True)
+    confirmation.message = await interaction.original_response()
+
+
+@final
+class _ResetModal(Modal):
+    def __init__(
+        self,
+        view       : NamedPaginator,
+        handler    : ResetHandler,
+        category   : str,
+        candidates : Sequence[ResetCandidate],
+    ) -> None:
+        super().__init__(title = f"Reset {category}")
+        self.view     = view
+        self.handler  = handler
+        self.category = category
+
+        self._options = {key : label for key, label, configured in candidates if configured}
+
+        options = [SelectOption(label = label, value = key) for key, label in self._options.items()]
+        if len(options) > 1:
+            options.append(
+                SelectOption(
+                    label       = f"All {category} Settings",
+                    value       =  "all",
+                    description = f"Reset every configured {category.lower()} setting at once.",
+                ),
+            )
+
+        self._selection = Select[Self](placeholder = "Select what to reset...", options = options)
+        self.selection  = Label[Self](
+            text        =  "Setting",
+            description = f"Choose which {category.lower()} setting to reset to its default.",
+            component   = self._selection,
+        )
+
+        self.add_item(self.selection)
+
+    @override
+    async def on_submit(self, interaction : Interaction) -> None:
+        choice = self._selection.values[0]
+
+        keys   = set(self._options) if choice == "all" else {choice}
+        target = f"all {self.category.lower()} settings" if choice == "all" else self._options[choice].lower()
+
+        await _confirm_reset(interaction, self.view, self.handler, keys, target)
+
+
+@final
+class ResetButton(Button[NamedPaginator]):
+    def __init__(self, category : str, handler : ResetHandler) -> None:
+        super().__init__(label = "Reset", style = ButtonStyle.red)
+        self.category = category
+        self.handler  = handler
+
+    @override
+    async def callback(self, interaction : Interaction) -> None:
+        if not self.view:
+            return
+
+        candidates = self.handler.candidates(self.category)
+
+        if len(candidates) == 1:
+            key, label, _ = candidates[0]
+            await _confirm_reset(interaction, self.view, self.handler, {key}, label.lower())
+            return
+
+        await interaction.response.send_modal(_ResetModal(self.view, self.handler, self.category, candidates))
+
+# ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 # Display Name Styles
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
+
 
 COLOR_PATTERN = regex_compile(r"^[0-9a-fA-F]{6}(?:-[0-9a-fA-F]{6}){0,4}$")
 
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
-# Biograph
+# Biography Stuff
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
 BLOCKED_TERMS = frozenset(
