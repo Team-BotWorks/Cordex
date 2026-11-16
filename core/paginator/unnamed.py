@@ -64,15 +64,15 @@ class _PageJumpModal(Modal, title = "Jump to Page"):
     async def on_submit(self, interaction : Interaction) -> None:
         try:
             page = int(self._page_input.value) - 1
+            if not 0 <= page < len(self.paginator.pages):
+                raise ValueError
         except ValueError:
             await send_bad_request(
                 interaction,
-                title    = "jump to page",
-                subtitle = "Please enter a positive integer greater than or equal to one",
+                title    =  "jump to page",
+                subtitle = f"Please enter a page number between one and {len(self.paginator.pages)}",
             )
             return
-
-        # ⸻ You're already on this page!
 
         if page == self.paginator.current_page:
             await send_bad_request(
@@ -82,19 +82,7 @@ class _PageJumpModal(Modal, title = "Jump to Page"):
             )
             return
 
-        # ⸻ Success..?
-
-        if 0 <= page < len(self.paginator.pages):
-            await self.paginator._turn(interaction, page)
-
-        # ⸻ Must be within the bounds of 1 and the highest page!
-
-        else:
-            await send_bad_request(
-                interaction,
-                title    =  "jump to page",
-                subtitle = f"Please enter a page between 1 and {len(self.paginator.pages)}",
-            )
+        await self.paginator._turn(interaction, page)
 
 
 @final
@@ -103,7 +91,11 @@ class _PageRow(ActionRow["UnnamedPaginator"]):
         super().__init__()
         self.paginator = paginator
 
-        # ⸻ Remove the first, page, and last buttons if we have 2 pages, and remove only the page button if we have 3 pages.
+        # ⸻ In both cases, the jump button is useless because you're either already on the desired page
+        # or you can navigate to it in a single click.
+
+        # ⸻ The first/last buttons are useless in this case because you they provide the same
+        # effect as just using the previous/next buttons.
 
         if len(paginator.pages) == 2:
             self.remove_item(self.btn_first)
@@ -111,8 +103,6 @@ class _PageRow(ActionRow["UnnamedPaginator"]):
             self.remove_item(self.btn_last)
         elif len(paginator.pages) == 3:
             self.remove_item(self.btn_page)
-
-        # ⸻ Update.
 
         self.update_states()
 
@@ -217,6 +207,23 @@ class Footer:
         self.singularize    = singularize
         self.on_single_page = f"-# {on_single_page}" if on_single_page is not None else None
         self.on_single_item = f"-# {on_single_item}" if on_single_item is not None else None
+
+    @override
+    def __repr__(self) -> str:
+        content        = self.content.removeprefix("-# ") if self.content is not None else None
+        on_single_page = self.on_single_page.removeprefix("-# ") if self.on_single_page is not None else None
+        on_single_item = self.on_single_item.removeprefix("-# ") if self.on_single_item is not None else None
+        return (
+            f"{self.__class__.__name__}("
+            f"{content!r}, "
+            f"singularize={self.singularize!r}, "
+            f"on_single_page={on_single_page!r}, "
+            f"on_single_item={on_single_item!r})"
+        )
+
+    @override
+    def __str__(self) -> str:
+        return self.content or ""
 
     @classmethod
     def from_name(cls, name : str, /) -> Self:
