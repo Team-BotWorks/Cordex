@@ -1,10 +1,8 @@
 from json import loads as json_loads
-from os import getenv
 from typing import cast
 
-from discord import NotFound
+from discord import DMChannel, Message, NotFound, PartialMessageable
 from discord.ext.commands import FlagConverter
-from openai import AsyncOpenAI
 
 from bot import Context
 from core.exceptions import send_bad_argument, send_bad_operation
@@ -39,11 +37,6 @@ TOP_GRADES = {"Brilliant", "Great", "Best", "Book Move"}
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 # .review Logic
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
-
-ai_client = AsyncOpenAI(
-    api_key  = getenv("GEMINI_API_KEY"),
-    base_url = "https://generativelanguage.googleapis.com/v1beta/openai",
-)
 
 PROMPT = """
 You are a witty Discord chat analyst grading messages based on their social appropriateness, relevance, and vibe within the conversation.
@@ -86,6 +79,33 @@ def _format_blockquote(text : str, /) -> str:
     return "\n".join(f"> {line}" for line in text.splitlines())
 
 
+async def _format_message_line(message : Message, messages : dict[int, Message], /) -> str:
+    reply_info = ""
+
+    if message.reference and message.reference.message_id:
+        reference_id = message.reference.message_id
+        referenced = None
+
+        if isinstance(message.reference.resolved, Message):
+            referenced = message.reference.resolved
+        elif reference_id in messages:
+            referenced = messages[reference_id]
+        else:
+            try:
+                referenced = await message.channel.fetch_message(reference_id)
+                messages[reference_id] = referenced
+            except NotFound:
+                pass
+
+        if referenced:
+            snippet = truncate(referenced.content.replace("\n", " "), limit = 80) if referenced.content else "[No content]"
+            reply_info = f' (replying to {referenced.author.display_name} | {referenced.author.name}: "{snippet}")'
+        else:
+            reply_info = " (replying to an unavailable message)"
+
+    return f"{message.author.display_name} | {message.author.name}{reply_info}: {message.content}"
+
+
 class ReviewFlags(FlagConverter, prefix = "--", delimiter = " "):
     nocontext : bool = False
 
@@ -93,6 +113,9 @@ class ReviewFlags(FlagConverter, prefix = "--", delimiter = " "):
 async def run_review(ctx : Context, *, flags : ReviewFlags) -> None:
     if not ctx.message.reference or not ctx.message.reference.message_id:
         await send_bad_argument(ctx, subtitle = "No message to review was provided. Provide one by replying to the message to review.")
+        return
+
+    if isinstance(ctx.channel, PartialMessageable | DMChannel):
         return
 
     async with ctx.typing():
@@ -106,28 +129,35 @@ async def run_review(ctx : Context, *, flags : ReviewFlags) -> None:
             await send_bad_argument(ctx, subtitle = "Message to review has no content.")
             return
 
+        cached_messages = {message_to_review.id : message_to_review}
+
         context_block : str
         if flags.nocontext:
             context_block = "Message to review is intentionally left with no context. Good luck!"
         else:
-            message_lines = [
-                f"{message.author.display_name} | {message.author.name}: {message.content}"
-                async for message in ctx.channel.history(limit = 10, before = message_to_review)
-                if message.content
-            ]
+            history_messages = [message async for message in ctx.channel.history(limit = 10, before = message_to_review) if message.content]
+            history_messages.reverse()
 
-            message_lines.reverse()
+            for message in history_messages:
+                cached_messages[message.id] = message
+
+            message_lines = [await _format_message_line(message, cached_messages) for message in history_messages]
             context_block = "\n".join(message_lines) or "No prior messages."
 
+        target_line = await _format_message_line(message_to_review, cached_messages)
+
         user_text = (
+            f"--- CHANNEL NAME & TOPIC --- \n"
+            f"{ctx.channel.name}: {getattr(ctx.channel, "topic", "No topic.")}\n"
+             "\n"
             f"--- RECENT CHAT CONTEXT ---\n"
             f"{context_block}\n"
-            "\n"
+             "\n"
             f"--- TARGET MESSAGE TO GRADE ---\n"
-            f"{message_to_review.author.display_name}: {message_to_review.content}"
+            f"{target_line}"
         )
 
-        response = await ai_client.chat.completions.create(
+        response = await ctx.bot.ai_client.chat.completions.create(
             model           = "gemini-3.6-flash",
             temperature     = 0.7,
             response_format = {"type" : "json_object"},

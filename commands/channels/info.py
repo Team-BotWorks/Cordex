@@ -46,15 +46,11 @@ from core.utilities import codeblock, format_table
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
 
-def _is_private(target : GuildChannel) -> bool:
-    return not target.permissions_for(target.guild.default_role).view_channel
-
-
 def _get_channel_emoji(target : GuildChannel) -> str | None:
-    if target.guild.rules_channel and target == target.guild.rules_channel:
+    if target == target.guild.rules_channel:
         return RULES_EMOJI
 
-    private = _is_private(target)
+    private = not target.permissions_for(target.guild.default_role).view_channel
 
     if isinstance(target, StageChannel):
         if len(target.members) > 0:
@@ -175,11 +171,9 @@ async def run_channel_info(interaction : Interaction, channel : GuildChannel | T
                 f"{channel_list}",
             )
     else:
-        category = f"{target.category.name} | {target.category.id}" if target.category else "None"
-
         info = {
             "Not Safe for Work" :  "Yes" if nsfw else "No",
-            "Category"          : category,
+            "Category"          : f"{target.category.name} | {target.category.id}" if target.category else "None",
             "Created at"        : f"{format_dt(target.created_at, style = "F")} | {format_dt(target.created_at, style = "R")}",
         }
 

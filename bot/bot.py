@@ -4,6 +4,7 @@
 from asyncio import to_thread
 from importlib import import_module
 from logging import getLogger as get_logger
+from os import getenv
 from pathlib import Path
 from pkgutil import walk_packages
 from typing import (
@@ -31,6 +32,7 @@ from discord.ext.commands import (
     when_mentioned_or,
 )
 from discord.ext.commands import Context as BaseContext
+from openai import AsyncOpenAI
 
 from constants import (
     COLOR_WHITE,
@@ -91,6 +93,26 @@ class Cordex(BaseBot):
         self.restarting : bool = False
 
         self.developers : list[User] = []
+
+    @property
+    def ai_client(self) -> AsyncOpenAI:
+        """
+        OpenAI client. Uses the `GEMINI_API_KEY` environment variable.
+
+        Raises
+        ------
+        ValueError
+            No key named GEMINI_API_KEY was found in the environment variables.
+        """
+        api_key = getenv("GEMINI_API_KEY")
+        if not api_key:
+            error = "No key named GEMINI_API_KEY found in environment variables"
+            raise ValueError(error)
+
+        return AsyncOpenAI(
+            api_key  = api_key,
+            base_url = "https://generativelanguage.googleapis.com/v1beta/openai",
+        )
 
     @override
     async def add_cog(self, cog : Cog, /) -> None:  # pyright: ignore[reportIncompatibleMethodOverride]
