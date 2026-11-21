@@ -6,7 +6,7 @@ from discord.ext.commands import Cog
 from bot import Cordex, Interaction
 from core.state import unrestrictable
 
-from .help import run_help
+from ._cmd import run_help
 
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 # Help Command

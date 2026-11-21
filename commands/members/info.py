@@ -89,19 +89,14 @@ async def run_member_info(
     if target in guild_members:
         target_index = guild_members.index(target)
 
-        join_lines = [
-            f"{index + 1:>4}. {"> " if index == target_index else "  "}{str(member) if member.discriminator != "0" else member.name}"
-            for index in range(
-                max(
-                    0,
-                    target_index - 3,
-                ),
-                min(
-                    len(guild_members),
-                    target_index + 4,
-                ),
-            ) for member in [guild_members[index]]
-        ]
+        start_index = max(0, target_index - 3)
+        end_index = min(len(guild_members), target_index + 4)
+
+        join_lines : list[str] = []
+        for i in range(start_index, end_index):
+            member = guild_members[i]
+            prefix = "> " if i == target_index else "  "
+            join_lines.append(f"{i + 1:>4}. {prefix}{member.name}")
 
         joins = codeblock("\n".join(join_lines), language = None) or "Unknown"
 

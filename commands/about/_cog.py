@@ -6,7 +6,7 @@ from discord.ext.commands import Cog
 from bot import Cordex, Interaction
 from core.state import unrestrictable
 
-from .about import run_about
+from ._cmd import run_about
 
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 # About Command

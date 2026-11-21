@@ -15,6 +15,20 @@ from core.responses import FormatOverride, MessageType, PunctuationOverride, for
 # Fun
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
+GREETINGS = ["hey", "hi", "hello", "yo", "wassup", "sup", "howdy", "greetings", "salutations", "hola", "ciao", "bonjour"]
+RESPONSES = [
+    "Hello, human.",
+    "Oh, hello.",
+    "Hi...",
+    "Oh, hi there.",
+    "Hello... I guess...",
+    "Oh, hey.",
+    "Um, hello. 👋",
+    "Hi. Is there something I can help with?",
+    "Hello there.",
+    "Hey.",
+]
+
 
 @final
 class Fun(Cog):
@@ -117,28 +131,26 @@ class Fun(Cog):
 
     @Cog.listener("on_message")
     async def _listener_fun_message(self, message : Message) -> None:
-        content   = message.content.lower()
-        reference = message.reference
-        author    = message.author
+        reference = (
+            message.reference.resolved
+            if message.reference
+            and isinstance(message.reference.resolved, Message)
+            else None
+        )
 
-        if author.bot:
+        if message.author.bot:
             return
 
-        # ⸻ Replies.
+        greeted_by_reply = reference and reference.author == self.bot.user
+        greeted_by_mention = self.bot.user in message.mentions
 
-        if reference and isinstance(
-            resolved_reference := reference.resolved,
-            Message,
-        ) and resolved_reference.author == self.bot.user:
-            words = [word.strip(".,!?\"'") for word in content.split()]
-            greetings = any(trigger in words for trigger in ["hi", "hello"])
-
+        if greeted_by_reply or greeted_by_mention:
+            words = [word.strip(".,!?\"'") for word in message.content.split()]
+            greetings = any(trigger in words for trigger in GREETINGS)
             if greetings:
-                responses = ["Hello, human.", "Greetings.", "Hi..?", "Hi... I guess..."]
-
                 async with message.channel.typing():
                     await sleep(1)
-                    await message.reply(content = choice(responses))
+                    await message.reply(content = choice(RESPONSES))
 
 
 async def setup(bot : Cordex) -> None:  # ruff: ignore[undocumented-public-function]

@@ -33,6 +33,7 @@ class Route(BaseRoute):
         self,
         method   : Literal["GET", "POST", "PATCH", "PUT", "DELETE"],
         path     : Template,
+        /,
         *,
         metadata : str | None = None,
     ) -> None:
@@ -47,12 +48,7 @@ class Route(BaseRoute):
         path_string += path.strings[-1]
         self.path_string = path_string
 
-        super().__init__(
-            method,
-            path_string,
-            metadata = metadata,
-            **parameters,
-        )
+        super().__init__(method, path_string, metadata = metadata, **parameters)
 
     @override
     def __str__(self) -> str:

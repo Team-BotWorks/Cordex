@@ -125,7 +125,7 @@ class Context(BaseContext["Cordex"]):
 
     async def send_button(self, callback : _Callback, /, *, restricted : bool = True) -> Message:
         @final
-        class _ViewButton(View):
+        class _ViewButton(SimpleView):
             def __init__(self) -> None:
                 super().__init__(timeout = None)
                 self.callback   = callback
@@ -166,8 +166,8 @@ class Context(BaseContext["Cordex"]):
     async def send_embed(self, embed : Embed, /) -> Message:
         return await self.send(embed = embed)
 
-    async def send_view(self, view : View | SimpleView, /) -> Message:
-        return await self.send(view = view)
+    async def send_view(self, view : View | SimpleView | type[View | SimpleView], /) -> Message:
+        return await self.send(view = view if isinstance(view, View | SimpleView) else view())
 
     async def send_modal(self, modal : Modal, /) -> Message:
         async def func(interaction : Interaction) -> None:
