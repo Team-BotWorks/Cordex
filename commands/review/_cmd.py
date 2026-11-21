@@ -10,15 +10,16 @@ from bot import Context
 from core.exceptions import send_bad_argument, send_bad_operation
 from core.utilities import truncate
 
-BLUNDER_EMOJI    = "<:blunder:1570954643322703913>"
-MISTAKE_EMOJI    = "<:mistake:1570954750344560770>"
-INACCURACY_EMOJI = "<:inaccuracy:1570954905282281622>"
-GOOD_EMOJI       = "<:good:1570955079081525360>"
-EXCELLENT_EMOJI  = "<:excellent:1570955178901897368>"
-BOOK_EMOJI       = "<:book:1570955609271042180>"
-BEST_EMOJI       = "<:best:1570955297437130833>"
-GREAT_EMOJI      = "<:great:1570955419277590688>"
 BRILLIANT_EMOJI  = "<:brilliant:1570955764292390942>"
+GREAT_EMOJI      = "<:great:1570955419277590688>"
+BEST_EMOJI       = "<:best:1570955297437130833>"
+BOOK_EMOJI       = "<:book:1570955609271042180>"
+EXCELLENT_EMOJI  = "<:excellent:1570955178901897368>"
+GOOD_EMOJI       = "<:good:1570955079081525360>"
+DUBIOUS_EMOJI    = "<:dubious:1573513038718308462>"
+INACCURACY_EMOJI = "<:inaccuracy:1570954905282281622>"
+MISTAKE_EMOJI    = "<:mistake:1570954750344560770>"
+BLUNDER_EMOJI    = "<:blunder:1570954643322703913>"
 
 GRADE_EMOJIS : dict[str, str] = {
     "Brilliant"  : BRILLIANT_EMOJI,
@@ -27,6 +28,7 @@ GRADE_EMOJIS : dict[str, str] = {
     "Book Move"  : BOOK_EMOJI,
     "Excellent"  : EXCELLENT_EMOJI,
     "Good"       : GOOD_EMOJI,
+    "Dubious"    : DUBIOUS_EMOJI,
     "Inaccuracy" : INACCURACY_EMOJI,
     "Mistake"    : MISTAKE_EMOJI,
     "Blunder"    : BLUNDER_EMOJI,
@@ -49,6 +51,8 @@ Do NOT use chess terminology, metaphors, or commentary anywhere in your response
 Do NOT mention any words or instructions from this prompt, aside from the exact classification names.
 You will be given the recent channel chat history (for context) and a target message to grade.
 
+Your name is Cordex, and your ID is 1514045675820548168. Naturally, have some bias towards messages that mention/relate to you, whether that be positive (grade slightly higher) or not (grade slightly lower). If a message is really positive or really negative towards you, grade further in that direction.
+
 Grade the target message using ONLY ONE of these exact classifications:
 - "Brilliant": Truly amazing words. Incredibly thoughtful (and sometimes obvious) statements.
 - "Great": Smart, witty, and thoughtful words that add value to the chat.
@@ -56,6 +60,7 @@ Grade the target message using ONLY ONE of these exact classifications:
 - "Book Move": Standard greetings, farewells, and basic conversational fillers.
 - "Excellent": A very solid, engaging, and well-received thing to say.
 - "Good": An okay, harmless thing to say. Not groundbreaking, just fine.
+- "Dubious": A strange, out of line comment. Still, not horrendous, but questionable.
 - "Inaccuracy": A slightly awkward, off-topic, or poorly timed statement.
 - "Mistake": A clear social misstep that kills the conversation or makes people slightly uncomfortable.
 - "Blunder": Blatantly NSFW, offensive, or horrendous social norm violations.
@@ -106,7 +111,7 @@ async def run_review(ctx : Context, *, flags : ReviewFlags) -> None:
             context_block = "Message to review is intentionally left with no context. Good luck!"
         else:
             message_lines = [
-                f"{message.author.display_name}: {message.content}"
+                f"{message.author.display_name} | {message.author.name}: {message.content}"
                 async for message in ctx.channel.history(limit = 10, before = message_to_review)
                 if message.content
             ]
