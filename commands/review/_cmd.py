@@ -19,7 +19,7 @@ INACCURACY_EMOJI = "<:inaccuracy:1570954905282281622>"
 MISTAKE_EMOJI    = "<:mistake:1570954750344560770>"
 BLUNDER_EMOJI    = "<:blunder:1570954643322703913>"
 
-GRADE_EMOJIS : dict[str, str] = {
+GRADE_EMOJIS = {
     "Brilliant"  : BRILLIANT_EMOJI,
     "Great"      : GREAT_EMOJI,
     "Best"       : BEST_EMOJI,
@@ -67,10 +67,10 @@ Calibration Examples:
 
 Respond ONLY with a valid JSON object matching the following schema:
 {
-    "grade": "One of the 9 exact classifications above",
+    "grade": "One of the 10 exact classifications above",
     "reason": "1-2 short, witty sentences explaining the grade based on social context and relevance, with zero chess references",
-    "best_move_message": "A short, realistic example of what they should have said instead based on context (or null if grade is Brilliant, Great, Best, or Book Move)",
-    "best_move_reason": "1-2 short, witty sentences explaining why that alternative fits the social moment better (or null if grade is Brilliant, Great, Best, or Book Move)"
+    "best_move_message": "REQUIRED non-null string if grade is Excellent, Good, Dubious, Inaccuracy, Mistake, or Blunder. Provide a short, realistic example of what they should have said instead. MUST be null ONLY if grade is Brilliant, Great, Best, or Book Move.",
+    "best_move_reason": "REQUIRED non-null string if grade is Excellent, Good, Dubious, Inaccuracy, Mistake, or Blunder. 1-2 short, witty sentences explaining why that alternative fits better. MUST be null ONLY if grade is Brilliant, Great, Best, or Book Move."
 }
 """
 
@@ -131,7 +131,6 @@ async def run_review(ctx : Context, *, flags : ReviewFlags) -> None:
 
         cached_messages = {message_to_review.id : message_to_review}
 
-        context_block : str
         if flags.nocontext:
             context_block = "Message to review is intentionally left with no context. Good luck!"
         else:
@@ -192,19 +191,18 @@ async def run_review(ctx : Context, *, flags : ReviewFlags) -> None:
         ]
 
         if chosen_grade not in TOP_GRADES:
-            best_message = data.get("best_move_message")
-            best_why     = data.get("best_move_reason")
+            best_message = (data.get("best_move_message") or "No message provided.").strip()
+            best_why     = (data.get("best_move_reason")  or "No reason provided.").strip()
 
-            if best_message and best_why:
-                output_lines.extend(
-                    [
-                        f"**{BEST_EMOJI} Best Move**",
-                        "Message:",
-                        _format_blockquote(best_message),
-                        "Why:",
-                        _format_blockquote(best_why),
-                    ],
-                )
+            output_lines.extend(
+                [
+                    f"**{BEST_EMOJI} Best Move**",
+                    "Message:",
+                    _format_blockquote(best_message),
+                    "Why:",
+                    _format_blockquote(best_why),
+                ],
+            )
 
         await message_to_review.add_reaction(emoji)
         await ctx.reply(truncate("\n".join(output_lines)))
