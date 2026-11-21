@@ -308,7 +308,7 @@ class ErrorLogger(Cog):
             return
 
         traceback = "".join(format_exception(error))
-        await send_bad_operation(ctx, subtitle = truncate(codeblock(traceback)))
+        await send_bad_operation(ctx, subtitle = truncate(codeblock(traceback), limit = 15000))
 
         await self._send_error(
             title     = "Prefix Command Error",
