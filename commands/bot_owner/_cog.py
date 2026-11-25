@@ -31,6 +31,9 @@ class BotOwnerCommands(Cog):
     def __init__(self, bot : Cordex) -> None:
         self.bot = bot
 
+        for command in self.walk_commands():
+            command.extras["is_bot_owner_only"] = True
+
     @override
     async def cog_check(self, ctx : Context) -> bool:  # pyright: ignore[reportIncompatibleMethodOverride]
         if not is_bot_owner(ctx.author):

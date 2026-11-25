@@ -308,7 +308,10 @@ class ErrorLogger(Cog):
             return
 
         traceback = "".join(format_exception(error))
-        await send_bad_operation(ctx, subtitle = truncate(codeblock(traceback), limit = 1500))
+        if ctx.command and ctx.command.extras.get("is_bot_owner_only"):
+            await send_bad_operation(ctx, subtitle = truncate(codeblock(traceback), limit = 1500))
+        else:
+            await send_bad_operation(ctx)
 
         await self._send_error(
             title     = "Prefix Command Error",
