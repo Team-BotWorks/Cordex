@@ -53,12 +53,13 @@ class _PageJumpModal(Modal, title = "Jump to Page"):
             min_length  = 1,
             max_length  = max_digits,
         )
-        self.page_input  = Label[Self](
-            text        = "Enter a page number.",
-            description = "Enter a positive integer greater than or equal to one.",
-            component   = self._page_input,
+        self.add_item(
+            Label(
+                text        = "Enter a page number.",
+                description = "Enter a positive integer greater than or equal to one.",
+                component   = self._page_input,
+            ),
         )
-        self.add_item(self.page_input)
 
     @override
     async def on_submit(self, interaction : Interaction) -> None:
@@ -92,7 +93,7 @@ class _PageRow(ActionRow["UnnamedPaginator"]):
         self.paginator = paginator
 
         # ⸻ In both cases, the jump button is useless because you're either already on the desired page
-        # or you can navigate to it in a single click.
+        # or you can navigate to it in a single click (which is faster than using a modal anyways).
 
         # ⸻ The first/last buttons are useless in this case because you they provide the same
         # effect as just using the previous/next buttons.
@@ -104,13 +105,13 @@ class _PageRow(ActionRow["UnnamedPaginator"]):
         elif len(paginator.pages) == 3:
             self.remove_item(self.btn_page)
 
-        self.update_states()
+        self._update()
 
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
-    # update_states
+    # _update
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
-    def update_states(self) -> None:
+    def _update(self) -> None:
         current = self.paginator.current_page
         total   = len(self.paginator.pages)
 
@@ -190,17 +191,16 @@ class Footer:
         on_single_item : str | None = None,
     ) -> None:
         if content:
+            error = None
             if content.count("{smallest_page}") > 1:
                 error = "'{smallest_page}' placeholder declared more than once"
-                raise ValueError(error)
             if content.count("{biggest_page}") > 1:
                 error = "'{biggest_page}' placeholder declared more than once"
-                raise ValueError(error)
             if content.count("{count}") > 1:
                 error = "'{count}' placeholder declared more than once"
-                raise ValueError(error)
             if content.count("{s}") > 1:
                 error = "'{s}' placeholder declared more than once"
+            if error:
                 raise ValueError(error)
 
         self.content        = f"-# {content}" if content is not None else None
@@ -314,14 +314,10 @@ class UnnamedPaginator(InteractiveView):
         self._below_items  : _ItemsList          = []
         self._title_button : _TitleButton | None = None
 
-        # ⸻ color is dependent on container.
-
         if color and not container:
             parameter_1 = "color"
             parameter_2 = "container"
             raise DependentParameterError(parameter_1, parameter_2)
-
-        # ⸻ Render.
 
         self._render()
 
@@ -331,8 +327,6 @@ class UnnamedPaginator(InteractiveView):
 
     @override
     async def on_timeout(self) -> None:
-        # ⸻ timeout without self.message.
-
         if self._timeout is not NOT_PASSED and not self.message:
             warn(
                 "timeout was passed but there is no message to edit.",
@@ -487,8 +481,6 @@ class UnnamedPaginator(InteractiveView):
     def _render(self) -> None:
         self.clear_items()
 
-        # ⸻ Add all items above.
-
         self.append_items(self._above_items)
 
         page_items : _ItemsList = []
@@ -537,19 +529,15 @@ class UnnamedPaginator(InteractiveView):
             items.append(TextDisplay(footer_text))
 
         if self._page_row:
-            self._page_row.update_states()
+            self._page_row._update()
             items.append(self._page_row)
 
         items.extend(self._under_items)
-
-        # ⸻ Add all items to the container if chosen or directly to the view if not.
 
         if self._container:
             self.add_item(Container(*items, color = self._color))
         else:
             self.append_items(items)
-
-        # ⸻ Add all items below.
 
         self.append_items(self._below_items)
 

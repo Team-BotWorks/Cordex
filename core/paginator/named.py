@@ -73,13 +73,9 @@ class _PageSelect(Select["NamedPaginator"]):
             ],
         )
         self.paginator = paginator
-        self.callback = self._on_select
 
-    # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
-    # _on_select
-    # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
-
-    async def _on_select(self, interaction : Interaction) -> None:
+    @override
+    async def callback(self, interaction : Interaction) -> None:  # pyright: ignore[reportIncompatibleMethodOverride]
         await self.paginator._turn(interaction, int(self.values[0]))
 
 
@@ -127,8 +123,6 @@ class NamedPaginator(InteractiveView):
         self._force     : bool                    = force
         self._timeout   : int | NOT_PASSED | None = timeout
 
-        # ⸻ data must contain more than one page.
-
         if len(data) == 1:
             error = "data must contain more than one page"
             raise ValueError(error)
@@ -145,14 +139,10 @@ class NamedPaginator(InteractiveView):
         self._under_items : _ItemsList = []
         self._below_items : _ItemsList = []
 
-        # ⸻ color is dependent on container.
-
         if color and not container:
             parameter_1 = "color"
             parameter_2 = "container"
             raise DependentParameterError(parameter_1, parameter_2)
-
-        # ⸻ Render.
 
         self._render()
 
@@ -176,8 +166,6 @@ class NamedPaginator(InteractiveView):
 
     @override
     async def on_timeout(self) -> None:
-        # ⸻ timeout without self.message.
-
         if self._timeout is not NOT_PASSED and not self.message:
             warn(
                 "timeout was passed but there is no message to edit.",
@@ -259,8 +247,6 @@ class NamedPaginator(InteractiveView):
     def _render(self) -> None:
         self.clear_items()
 
-        # ⸻ Add all items above.
-
         self.append_items(self._above_items)
 
         page = self.pages[self.current_page]
@@ -295,14 +281,10 @@ class NamedPaginator(InteractiveView):
 
         items.extend(self._under_items)
 
-        # ⸻ Add all items to the container if chosen or directly to the view if not.
-
         if self._container:
             self.add_item(Container(*items, color = self._color))
         else:
             self.append_items(items)
-
-        # ⸻ Add all items below.
 
         self.append_items(self._below_items)
 
