@@ -95,7 +95,7 @@ class Cordex(BaseBot):
         self.developers : list[User] = []
 
     @property
-    def ai_client(self) -> AsyncOpenAI:
+    def ai(self) -> AsyncOpenAI:
         """
         OpenAI client. Uses the `GEMINI_API_KEY` environment variable.
 

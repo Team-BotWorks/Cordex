@@ -156,7 +156,7 @@ async def run_review(ctx : Context, *, flags : ReviewFlags) -> None:
             f"{target_line}"
         )
 
-        response = await ctx.bot.ai_client.chat.completions.create(
+        response = await ctx.bot.ai.chat.completions.create(
             model           = "gemini-3.6-flash",
             temperature     = 0.7,
             response_format = {"type" : "json_object"},
