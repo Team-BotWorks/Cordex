@@ -11,7 +11,7 @@ from discord.app_commands import (
     BotMissingPermissions,
     CommandOnCooldown,
 )
-from discord.ext.commands import Cog, MissingRequiredArgument
+from discord.ext.commands import Cog, MissingRequiredArgument as MissingRequiredPrefixArgument
 from discord.ext.commands import CommandError as PrefixCommandError
 from discord.ext.commands import CommandNotFound as PrefixCommandNotFound
 
@@ -300,7 +300,7 @@ class ErrorLogger(Cog):
         if isinstance(error, PrefixCommandNotFound):
             return
 
-        if isinstance(error, MissingRequiredArgument):
+        if isinstance(error, MissingRequiredPrefixArgument):
             await send_bad_argument(ctx, subtitle = {error.param.name : "This is a required argument that was omitted."})
             return
 
