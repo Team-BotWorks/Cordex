@@ -1,19 +1,23 @@
 from asyncio import AbstractEventLoop, get_running_loop
+from io import BytesIO
 from secrets import randbelow
 from sys import exc_info
 from traceback import format_exception
 from typing import final, override
 
-from discord import AllowedMentions, Guild, Member, TextChannel, User
+from discord import AllowedMentions, File, Guild, Member, TextChannel, User
 from discord import Interaction as BaseInteraction
 from discord.app_commands import (
     AppCommandError,
     BotMissingPermissions,
     CommandOnCooldown,
 )
-from discord.ext.commands import Cog, MissingRequiredArgument as MissingRequiredPrefixArgument
+from discord.ext.commands import Cog
 from discord.ext.commands import CommandError as PrefixCommandError
 from discord.ext.commands import CommandNotFound as PrefixCommandNotFound
+from discord.ext.commands import (
+    MissingRequiredArgument as MissingRequiredPrefixArgument,
+)
 
 from bot import Context, ContextOrInteraction, Cordex, Interaction
 from bot.ui import Container, TextDisplay, View, VisibleLargeSeparator
@@ -87,11 +91,12 @@ class ErrorLogger(Cog):
             color = COLOR_RED,
         )
 
-        if traceback:
-            container.add_item(
+        if error:
+            container.add_items(
+                VisibleLargeSeparator(),
                 TextDisplay(
-                    f"## Traceback\n"
-                    f"{codeblock(traceback[:2000])}",
+                    "## Error\n"
+                   f"{codeblock(error)}",
                 ),
             )
 
@@ -161,15 +166,6 @@ class ErrorLogger(Cog):
                     ),
                 )
 
-        if error:
-            container.add_items(
-                VisibleLargeSeparator(),
-                TextDisplay(
-                    "## Error\n"
-                   f"{codeblock(error)}",
-                ),
-            )
-
         container.add_items(
             VisibleLargeSeparator(),
             TextDisplay(f"{format_now()} | {format_now("R")}"),
@@ -181,6 +177,8 @@ class ErrorLogger(Cog):
             view             = view,
             allowed_mentions = AllowedMentions(users = False, roles = True),
         )
+        if traceback:
+            await channel.send(file = File(BytesIO(traceback.encode())))
 
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
     # Discord Event Errors
