@@ -14,10 +14,6 @@ from ._cmd import ReviewFlags, run_review
 
 @final
 class ReviewCommand(Cog):
-    # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
-    # .review Command
-    # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
-
     @prefix_command(name = "review")
     async def cmd_review(self, ctx : Context, *, flags : ReviewFlags) -> None:
         await run_review(ctx, flags = flags)

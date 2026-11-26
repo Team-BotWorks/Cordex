@@ -367,40 +367,10 @@ class Cordex(BaseBot):
         return await super().get_context(origin, cls = cls or Context)
 
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
-    # setup_hook
+    # Startup
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
-    @override
-    async def setup_hook(self) -> None:
-        if self.user:
-            log.info("Logging in as %s with user ID %s", self.user.name, self.user.id)
-            log.info("Serving %s guilds; %s users", len(self.guilds), len(self.users))
-
-        self.developers = [user for developer_id in DEVELOPER_IDS if (user := await self.fetch_user(developer_id))]
-
-        # ⸻ AIOSQLite
-
-        db_path = Path("data/database.db")
-        db_path.parent.mkdir(parents = True, exist_ok = True)
-
-        self.db = await connect(str(db_path))
-        self.db.row_factory = Row
-
-        def read_schemas() -> list[tuple[Path, str]]:
-            return [(schema, schema.read_text(encoding = "utf-8")) for schema in Path("schemas").glob("*.sql")]
-
-        for path, schema in await to_thread(read_schemas):
-            try:
-                await self.db.executescript(schema)
-            except Exception:
-                log.exception("Failed to execute schema %s", path)
-            else:
-                log.info("Executed schema '%s'", path)
-
-        await self.db.commit()
-
-        # ⸻ Cogs
-
+    async def _load_cogs(self) -> None:
         seen : set[str] = set()
 
         for package_name in PACKAGE_NAMES:
@@ -443,6 +413,39 @@ class Cordex(BaseBot):
                 log.exception("Failed to load cog %s", cog_path)
             else:
                 log.info("Loaded cog '%s'", cog_path)
+
+    @override
+    async def setup_hook(self) -> None:
+        if self.user:
+            log.info("Logging in as %s with user ID %s", self.user.name, self.user.id)
+            log.info("Serving %s guilds; %s users", len(self.guilds), len(self.users))
+
+        self.developers = [user for developer_id in DEVELOPER_IDS if (user := await self.fetch_user(developer_id))]
+
+        # ⸻ aiosqlite
+
+        db_path = Path("data/database.db")
+        db_path.parent.mkdir(parents = True, exist_ok = True)
+
+        self.db = await connect(str(db_path))
+        self.db.row_factory = Row
+
+        def read_schemas() -> list[tuple[Path, str]]:
+            return [(schema, schema.read_text(encoding = "utf-8")) for schema in Path("schemas").glob("*.sql")]
+
+        for path, schema in await to_thread(read_schemas):
+            try:
+                await self.db.executescript(schema)
+            except Exception:
+                log.exception("Failed to execute schema %s", path)
+            else:
+                log.info("Executed schema '%s'", path)
+
+        await self.db.commit()
+
+        # ⸻ Cogs
+
+        await self._load_cogs()
 
         # ⸻ Cache
 

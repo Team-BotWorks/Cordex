@@ -10,6 +10,8 @@ from core.responses import FormatOverride, MessageType, format_send
 # Moderation Managers
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
+type EnforceTypes = Literal["Channels", "Role", "Members"]
+
 RATE_LIMITED = 429
 
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
@@ -373,7 +375,115 @@ class QuarantineManager:
     # enforce
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
-    type EnforceTypes = Literal["Channels", "Role", "Members"]
+    async def _enforce_channels(self, quarantine_role : Role, /) -> None:
+        wants_enforcement = await self.bot.config(self.guild).get_whether_moderation_quarantine_enforce_channels()
+        if not wants_enforcement:
+            return
+
+        me = self.guild.me
+        if not me or not me.guild_permissions.manage_channels:
+            return
+
+        for channel in self.guild.channels:
+            overwrites = channel.overwrites_for(quarantine_role)
+
+            overwrites.update(
+                send_messages_in_threads = False,
+                create_instant_invite    = False,
+                send_messages            = False,
+                create_public_threads    = False,
+                create_private_threads   = False,
+                read_messages            = False,
+            )
+
+            try:
+                await channel.set_permissions(
+                    quarantine_role,
+                    overwrite = overwrites,
+                    reason    = "Quarantine enforcement.",
+                )
+            except Forbidden:
+                pass
+            except HTTPException as e:
+                rate_limited = (e.status == RATE_LIMITED)
+                self._log_failure("channel quarantine enforcement", rate_limited = rate_limited)
+                if rate_limited:
+                    raise
+
+    async def _enforce_role(self, quarantine_role : Role, /) -> None:
+        wants_enforcement = await self.bot.config(self.guild).get_whether_moderation_quarantine_enforce_roles()
+        if not wants_enforcement:
+            return
+
+        me = self.guild.me
+        if not me or not me.guild_permissions.manage_roles:
+            return
+
+        my_role = me.top_role
+        if quarantine_role.permissions.value != 0:
+            try:
+                await quarantine_role.edit(permissions = Permissions.none())
+            except Forbidden:
+                pass
+            except HTTPException as e:
+                rate_limited = (e.status == RATE_LIMITED)
+                self._log_failure("role quarantine enforcement", rate_limited = rate_limited)
+                if rate_limited:
+                    raise
+
+        if my_role.position > 1 and quarantine_role.position != my_role.position - 1:
+            try:
+                await quarantine_role.edit(position = my_role.position - 1)
+            except Forbidden:
+                pass
+            except HTTPException as e:
+                rate_limited = (e.status == RATE_LIMITED)
+                self._log_failure("role quarantine enforcement", rate_limited = rate_limited)
+                if rate_limited:
+                    raise
+
+    async def _enforce_members(self, quarantine_role : Role, /) -> None:
+        me = self.guild.me
+        if not me or not me.guild_permissions.manage_roles:
+            return
+
+        true_quarantined = await self.get()
+        role_quarantined = set(quarantine_role.members)
+
+        for member in true_quarantined:
+            if member.roles != [quarantine_role]:
+                await member.edit(roles = [quarantine_role], reason = "Quarantine enforcement.")
+
+        # ⸻ Role members matches quarantined members. Exit.
+
+        if role_quarantined == true_quarantined:
+            return
+
+        # ⸻ Some role members have the quarantine role but are not quarantined. Remove the role.
+
+        for member in (role_quarantined - true_quarantined):
+            try:
+                await member.remove_roles(quarantine_role, reason = "Quarantine enforcement.")
+            except Forbidden:
+                pass
+            except HTTPException as e:
+                rate_limited = (e.status == RATE_LIMITED)
+                self._log_failure("member quarantine enforcement (removal)", rate_limited = rate_limited)
+                if rate_limited:
+                    raise
+
+        # ⸻ Some quarantined members are missing the quarantine role. Add the role.
+
+        for member in (true_quarantined - role_quarantined):
+            try:
+                await member.add_roles(quarantine_role, reason = "Quarantine enforcement.")
+            except Forbidden:
+                pass
+            except HTTPException as e:
+                rate_limited = (e.status == RATE_LIMITED)
+                self._log_failure("member quarantine enforcement (addition)", rate_limited = rate_limited)
+                if rate_limited:
+                    raise
 
     async def enforce(self, enforce_type : EnforceTypes = "Members", /) -> None:
         """
@@ -390,11 +500,6 @@ class QuarantineManager:
         enforce_type : `Literal["Channels", "Role", "Members"]`
             The type of quarantine enforcement to execute.
         /
-
-        Raises
-        ------
-        HTTPException
-            The enforcement caused a ratelimit.
         """
         config = self.bot.config(self.guild)
 
@@ -414,118 +519,9 @@ class QuarantineManager:
                 )
             return
 
-        # ⸻ Channels
-
         if enforce_type == "Channels":
-            wants_enforcement = await config.get_whether_moderation_quarantine_enforce_channels()
-            if not wants_enforcement:
-                return
-
-            me = self.guild.me
-            if not me or not me.guild_permissions.manage_channels:
-                return
-
-            for channel in self.guild.channels:
-                overwrites = channel.overwrites_for(quarantine_role)
-
-                overwrites.update(
-                    send_messages_in_threads = False,
-                    create_instant_invite    = False,
-                    send_messages            = False,
-                    create_public_threads    = False,
-                    create_private_threads   = False,
-                    read_messages            = False,
-                )
-
-                try:
-                    await channel.set_permissions(
-                        quarantine_role,
-                        overwrite = overwrites,
-                        reason    = "Quarantine enforcement.",
-                    )
-                except Forbidden:
-                    pass
-                except HTTPException as e:
-                    rate_limited = (e.status == RATE_LIMITED)
-                    self._log_failure("channel quarantine enforcement", rate_limited = rate_limited)
-                    if rate_limited:
-                        raise
-
-        # ⸻ Role
-
-        if enforce_type == "Role":
-            wants_enforcement = await config.get_whether_moderation_quarantine_enforce_roles()
-            if not wants_enforcement:
-                return
-
-            me = self.guild.me
-            if not me or not me.guild_permissions.manage_roles:
-                return
-
-            my_role = me.top_role
-            if quarantine_role.permissions.value != 0:
-                try:
-                    await quarantine_role.edit(permissions = Permissions.none())
-                except Forbidden:
-                    pass
-                except HTTPException as e:
-                    rate_limited = (e.status == RATE_LIMITED)
-                    self._log_failure("role quarantine enforcement", rate_limited = rate_limited)
-                    if rate_limited:
-                        raise
-
-            if my_role.position > 1 and quarantine_role.position != my_role.position - 1:
-                try:
-                    await quarantine_role.edit(position = my_role.position - 1)
-                except Forbidden:
-                    pass
-                except HTTPException as e:
-                    rate_limited = (e.status == RATE_LIMITED)
-                    self._log_failure("role quarantine enforcement", rate_limited = rate_limited)
-                    if rate_limited:
-                        raise
-
-        # ⸻ Members
-
-        if enforce_type == "Members":
-            me = self.guild.me
-            if not me or not me.guild_permissions.manage_roles:
-                return
-
-            true_quarantined = await self.get()
-            role_quarantined = set(quarantine_role.members)
-
-            for member in true_quarantined:
-                if member.roles != [quarantine_role]:
-                    await member.edit(roles = [quarantine_role], reason = "Quarantine enforcement.")
-
-            # ⸻ Role members matches quarantined members. Exit.
-
-            if role_quarantined == true_quarantined:
-                return
-
-            # ⸻ Some role members have the quarantine role but are not quarantined. Remove the role.
-
-            for member in (role_quarantined - true_quarantined):
-                try:
-                    await member.remove_roles(quarantine_role, reason = "Quarantine enforcement.")
-                except Forbidden:
-                    pass
-                except HTTPException as e:
-                    rate_limited = (e.status == RATE_LIMITED)
-                    self._log_failure("member quarantine enforcement (removal)", rate_limited = rate_limited)
-                    if rate_limited:
-                        raise
-
-            # ⸻ Some quarantined members are missing the quarantine role. Add the role.
-
-            for member in (true_quarantined - role_quarantined):
-                try:
-                    await member.add_roles(quarantine_role, reason = "Quarantine enforcement.")
-                except Forbidden:
-                    pass
-                except HTTPException as e:
-                    rate_limited = (e.status == RATE_LIMITED)
-                    self._log_failure("member quarantine enforcement (addition)", rate_limited = rate_limited)
-                    if rate_limited:
-                        raise
+            await self._enforce_channels(quarantine_role)
+        elif enforce_type == "Role":
+            await self._enforce_role(quarantine_role)
+        else:
+            await self._enforce_members(quarantine_role)

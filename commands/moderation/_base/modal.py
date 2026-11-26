@@ -3,7 +3,7 @@
 from contextlib import suppress
 from typing import Self, final, override
 
-from discord import ButtonStyle, Member, User
+from discord import ButtonStyle, Guild, Member, User
 
 from bot import Interaction
 from bot.types import GuildMessageable, GuildMessageableChannel
@@ -23,6 +23,7 @@ from bot.ui import (
 from constants import ACCEPTED_EMOJI, DENIED_EMOJI, WARNING_EMOJI
 from core.exceptions import send_bad_argument
 from core.moderation import (
+    ActionResult,
     Actions,
     ActionType,
     BanAddPayload,
@@ -51,12 +52,24 @@ from .utilities import hierarchy
 type Targetable = User | Member | GuildMessageable
 
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
-# Moderation Select Base
+# Moderation Modal Base
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
-# ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
-# State
-# ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
+CHANNEL_TYPES = {
+    ActionType.lockdown_add,
+    ActionType.lockdown_remove,
+    ActionType.purge,
+}
+
+PERSON_TYPES  = {
+    ActionType.ban_add,
+    ActionType.ban_remove,
+    ActionType.kick,
+    ActionType.quarantine_add,
+    ActionType.quarantine_remove,
+    ActionType.timeout_add,
+    ActionType.timeout_remove,
+}
 
 
 @final
@@ -70,52 +83,28 @@ class _ModerationModal(Modal):
         edit_view    : View             | None = None,
         state        : _ModerationModal | None = None,
     ) -> None:
-        self.edit_view    : View   | None = edit_view
-        self.purge_target : Member | None = purge_target
+        self.edit_view    = edit_view
+        self.purge_target = purge_target
 
-        target_name = target.name
-
-        channel_types = {
-            ActionType.lockdown_add,
-            ActionType.lockdown_remove,
-            ActionType.purge,
-        }
-
-        person_types  = {
-            ActionType.ban_add,
-            ActionType.ban_remove,
-            ActionType.kick,
-            ActionType.quarantine_add,
-            ActionType.quarantine_remove,
-            ActionType.timeout_add,
-            ActionType.timeout_remove,
-        }
-
-        # ⸻ Validate that target is the correct type.
-
-        if isinstance(target, GuildMessageable) and action_type not in channel_types:
+        if isinstance(target, GuildMessageable) and action_type not in CHANNEL_TYPES:
             error = "target cannot be GuildMessageable if action_type is not a channel type"
             raise ValueError(error)
 
-        if isinstance(target, Member) and action_type not in person_types:
-            error = "target cannot be Member if action_type is not a user type"
-            raise ValueError(error)
-
-        if isinstance(target, User) and action_type not in person_types:
-            error = "target cannot be User if action_type is not a user type"
+        if isinstance(target, User | Member) and action_type not in PERSON_TYPES:
+            error = "target cannot be User/Member if action_type is not a user type"
             raise ValueError(error)
 
         title : dict[ActionType, str] = {
-            ActionType.lockdown_add      : f"Placing {target_name} in Lockdown",
-            ActionType.lockdown_remove   : f"Removing {target_name} from Lockdown",
-            ActionType.ban_add           : f"Banning {target_name}",
-            ActionType.ban_remove        : f"Unbanning {target_name}",
-            ActionType.kick              : f"Kicking {target_name}",
-            ActionType.quarantine_add    : f"Placing {target_name} in Quarantine",
-            ActionType.quarantine_remove : f"Removing {target_name} from Quarantine",
-            ActionType.timeout_add       : f"Placing {target_name} in Timeout",
-            ActionType.timeout_remove    : f"Removing {target_name} from Timeout",
-            ActionType.purge             : f"Purging {target_name}",
+            ActionType.lockdown_add      : f"Placing {target.name} in Lockdown",
+            ActionType.lockdown_remove   : f"Removing {target.name} from Lockdown",
+            ActionType.ban_add           : f"Banning {target.name}",
+            ActionType.ban_remove        : f"Unbanning {target.name}",
+            ActionType.kick              : f"Kicking {target.name}",
+            ActionType.quarantine_add    : f"Placing {target.name} in Quarantine",
+            ActionType.quarantine_remove : f"Removing {target.name} from Quarantine",
+            ActionType.timeout_add       : f"Placing {target.name} in Timeout",
+            ActionType.timeout_remove    : f"Removing {target.name} from Timeout",
+            ActionType.purge             : f"Purging {target.name}",
         }
         name : dict[ActionType, str] = {
             ActionType.lockdown_add      : "lockdown",
@@ -130,10 +119,10 @@ class _ModerationModal(Modal):
             ActionType.purge             : "purge",
         }
 
-        self.action_type : ActionType = action_type
-        self.target                   = target
-        self.name                     = name[action_type]
-        self.has_dm      : bool       = action_type not in channel_types
+        self.action_type = action_type
+        self.target      = target
+        self.name        = name[action_type]
+        self.has_dm      = action_type not in CHANNEL_TYPES
 
         super().__init__(title = title[action_type])
 
@@ -228,12 +217,7 @@ class _ModerationModal(Modal):
 
         self.append_items(items)
 
-    @override
-    async def on_submit(self, interaction : Interaction) -> None:
-        modal = self
-
-        # ⸻ Update the defaults.
-
+    def _update_defaults(self) -> None:
         self._reason.default = self._reason.value
 
         if self.action_type == ActionType.timeout_add:
@@ -251,82 +235,69 @@ class _ModerationModal(Modal):
         if self.has_dm:
             self._dm.default = self._dm.value
 
-        reason = self._reason.value
+    async def _validate_purge(self, interaction : Interaction, *, force : bool) -> int | None:
+        if not interaction.guild or not isinstance(interaction.user, Member):
+            return None
 
-        length : str | None = None
-        dtd    : str | None = None
+        # ⸻ We already validated that target is a GuildMessageable in __init__.
 
-        purge_member : Member | None = self.purge_target
-        amount       : int    | None = None
-        force        : bool          = False
-        dm           : bool          = False
+        if not isinstance(self.target, GuildMessageable):
+            return None
 
-        if self.action_type == ActionType.timeout_add:
-            length = self._length.value
+        # ⸻ Force requires Target.
 
-        await interaction.response.defer(ephemeral = True)
+        if force and self.purge_target is None:
+            await send_bad_argument(
+                interaction,
+                subtitle = {"force" : "`force` is dependent on `target`."},
+            )
+            return None
 
-        match self.action_type:
-            case ActionType.ban_add:
-                dtd = self._dtd.value
-            case ActionType.purge:
-                force = self._force.value
+        # ⸻ Validate amount.
 
-                if not interaction.guild or not isinstance(interaction.user, Member):
-                    return
+        try:
+            amount = int(self._amount.value)
+        except ValueError, TypeError:
+            await send_bad_argument(
+                interaction,
+                subtitle = {"amount" : "`amount` must be a valid integer."},
+            )
+            return None
 
-                # ⸻ We already validated that target is a GuildMessageable in __init__.
-
-                if not isinstance(self.target, GuildMessageable):
-                    return
-
-                # ⸻ Force requires Target.
-
-                if force and purge_member is None:
-                    await send_bad_argument(
-                        interaction,
-                        subtitle = {"force" : "`force` is dependent on `target`."},
-                    )
-                    return
-
-                # ⸻ Validate amount.
-
-                try:
-                    amount = int(self._amount.value)
-                except ValueError, TypeError:
-                    await send_bad_argument(
-                        interaction,
-                        subtitle = {"amount" : "`amount` must be a valid integer."},
-                    )
-                    return
-
-                match amount:
-                    case 0:
-                        await send_bad_argument(
-                            interaction,
-                            subtitle = {"amount" : "Cannot purge zero messages."},
-                        )
-                        return
-                    case 1:
-                        await send_bad_argument(
-                            interaction,
-                            subtitle = {"amount" : "Please delete the message manually."},
-                        )
-                        return
-                    case n if n < 0:
-                        await send_bad_argument(
-                            interaction,
-                            subtitle = {"amount" : "`amount` cannot be a negative number."},
-                        )
-                        return
-                    case _:
-                        pass
+        match amount:
+            case 0:
+                await send_bad_argument(
+                    interaction,
+                    subtitle = {"amount" : "Cannot purge zero messages."},
+                )
+                return None
+            case 1:
+                await send_bad_argument(
+                    interaction,
+                    subtitle = {"amount" : "Delete the message manually."},
+                )
+                return None
+            case n if n < 0:
+                await send_bad_argument(
+                    interaction,
+                    subtitle = {"amount" : "`amount` must be a valid integer."},
+                )
+                return None
             case _:
                 pass
 
-        if self.has_dm:
-            dm = self._dm.value
+        return amount
 
+    def _build_summary(
+        self,
+        *,
+        reason : str,
+        length : str | None,
+        dtd    : str | None,
+        amount : int | None,
+        force  : bool,
+        dm     : bool,
+    ) -> str:
         action_table : dict[str, object] = {"Reason" : reason}
 
         if length is not None:
@@ -350,15 +321,15 @@ class _ModerationModal(Modal):
                 ),
             ]
 
-            if purge_member is not None:
+            if self.purge_target is not None:
                 sections.extend(
                     (
                         "### Target Member",
                         format_table(
                             {
-                                "User"     : purge_member.mention,
-                                "Username" : purge_member.name,
-                                "User ID"  : purge_member.id,
+                                "User"     : self.purge_target.mention,
+                                "Username" : self.purge_target.name,
+                                "User ID"  : self.purge_target.id,
                             },
                         ),
                     ),
@@ -371,27 +342,284 @@ class _ModerationModal(Modal):
                 ),
             )
 
-            summary = "\n".join(sections)
+            return "\n".join(sections)
+
+        if self.has_dm:
+            action_table["DM Member"] = dm
+
+        target_table : dict[str, object] = {
+            "User"     : self.target.mention,
+            "Username" : self.target.name,
+            "User ID"  : self.target.id,
+        } if isinstance(self.target, Member | User) else {
+            "Channel"    : self.target.mention,
+            "Name"       : self.target.name,
+            "Channel ID" : self.target.id,
+        }
+
+        return (
+             "### Target\n"
+            f"{format_table(target_table)}\n"
+             "### Action Information\n"
+            f"{format_table(action_table)}"
+        )
+
+    async def _execute(
+        self,
+        actions   : Actions,
+        moderator : Member,
+        *,
+        reason    : str,
+        length    : str | None,
+        dtd       : str | None,
+        dm        : bool,
+        amount    : int | None,
+        force     : bool,
+    ) -> ActionResult[int] | ActionResult[None]:
+        match self.action_type:
+            case ActionType.lockdown_add:
+                if not isinstance(self.target, GuildMessageableChannel):
+                    raise TypeError
+
+                return await actions.lockdown_add(
+                    LockdownAddPayload(
+                        moderator = moderator,
+                        channel   = self.target,
+                        reason    = reason,
+                    ),
+                )
+            case ActionType.lockdown_remove:
+                if not isinstance(self.target, GuildMessageableChannel):
+                    raise TypeError
+
+                return await actions.lockdown_remove(
+                    LockdownRemovePayload(
+                        moderator = moderator,
+                        channel   = self.target,
+                        reason    = reason,
+                    ),
+                )
+            case ActionType.ban_add:
+                if not isinstance(self.target, Member):
+                    raise TypeError
+
+                seconds_to_delete = 7 * 86400
+                if dtd is not None:
+                    with suppress(ValueError):
+                        seconds_to_delete = int(dtd) * 86400
+
+                return await actions.ban_add(
+                    BanAddPayload(
+                        moderator         = moderator,
+                        target            = self.target,
+                        reason            = reason,
+                        dm_user           = dm,
+                        seconds_to_delete = seconds_to_delete,
+                    ),
+                )
+            case ActionType.ban_remove:
+                if not isinstance(self.target, User):
+                    raise TypeError
+
+                return await actions.ban_remove(
+                    BanRemovePayload(
+                        moderator = moderator,
+                        target    = self.target,
+                        reason    = reason,
+                        dm_user   = dm,
+                    ),
+                )
+            case ActionType.kick:
+                if not isinstance(self.target, Member):
+                    raise TypeError
+
+                return await actions.kick(
+                    KickPayload(
+                        moderator = moderator,
+                        target    = self.target,
+                        reason    = reason,
+                        dm_user   = dm,
+                    ),
+                )
+            case ActionType.quarantine_add:
+                if not isinstance(self.target, Member):
+                    raise TypeError
+
+                return await actions.quarantine_add(
+                    QuarantineAddPayload(
+                        moderator = moderator,
+                        target    = self.target,
+                        reason    = reason,
+                        dm_user   = dm,
+                    ),
+                )
+            case ActionType.quarantine_remove:
+                if not isinstance(self.target, Member):
+                    raise TypeError
+
+                return await actions.quarantine_remove(
+                    QuarantineRemovePayload(
+                        moderator = moderator,
+                        target    = self.target,
+                        reason    = reason,
+                        dm_user   = dm,
+                    ),
+                )
+            case ActionType.timeout_add:
+                if not isinstance(self.target, Member):
+                    raise TypeError
+
+                try:
+                    timeout_length = int(length) if length is not None else 0
+                except ValueError:
+                    timeout_length = 0
+
+                return await actions.timeout_add(
+                    TimeoutAddPayload(
+                        moderator = moderator,
+                        target    = self.target,
+                        reason    = reason,
+                        dm_user   = dm,
+                        length    = timeout_length,
+                    ),
+                )
+            case ActionType.timeout_remove:
+                if not isinstance(self.target, Member):
+                    raise TypeError
+
+                return await actions.timeout_remove(
+                    TimeoutRemovePayload(
+                        moderator = moderator,
+                        target    = self.target,
+                        reason    = reason,
+                        dm_user   = dm,
+                    ),
+                )
+            case ActionType.purge:
+                if not isinstance(self.target, GuildMessageable):
+                    raise TypeError
+
+                return await actions.purge(
+                    PurgePayload(
+                        moderator = moderator,
+                        target    = self.purge_target,
+                        reason    = reason,
+                        channel   = self.target,
+                        amount    = amount or 0,
+                        force     = force,
+                    ),
+                )
+
+    async def _build_result_view(
+        self,
+        interaction : Interaction,
+        guild       : Guild,
+        result      : ActionResult[int] | ActionResult[None],
+    ) -> View:
+        table    : dict[str, str] = {}
+        statuses : list[bool]     = []
+        notes    : list[str]      = []
+
+        if not result.failed:
+            table[self.action_type.readable] = f"{ACCEPTED_EMOJI} Success."
+            statuses.append(True)
         else:
-            if self.has_dm:
-                action_table["DM Member"] = dm
+            table[self.action_type.readable] = f"{DENIED_EMOJI} Failure."
+            statuses.append(False)
 
-            target_table : dict[str, object] = {
-                "User"     : self.target.mention,
-                "Username" : self.target.name,
-                "User ID"  : self.target.id,
-            } if isinstance(self.target, Member | User) else {
-                "Channel"    : self.target.mention,
-                "Name"       : self.target.name,
-                "Channel ID" : self.target.id,
-            }
+        if result.dmed is True:
+            table["DMed Member"] = f"{ACCEPTED_EMOJI} Success."
+            statuses.append(True)
+        elif result.dmed is False:
+            table["DMed Member"] = f"{DENIED_EMOJI} Failure."
+            statuses.append(False)
+            notes.append("**DMed Member:** This failed because the target has their DMs closed.")
 
-            summary = (
-                 "### Target\n"
-                f"{format_table(target_table)}\n"
-                 "### Action Information\n"
-                f"{format_table(action_table)}"
-            )
+        if result.logged is True:
+            table["Logged"] = f"{ACCEPTED_EMOJI} Success."
+            statuses.append(True)
+        elif result.logged is False:
+            table["Logged"] = f"{DENIED_EMOJI} Failure."
+            statuses.append(False)
+
+            if not await interaction.client.config(guild).get_moderation_logging_channel():
+                notes.append("**Logged:** This server has not set up a logging channel for moderation.")
+
+        if self.action_type == ActionType.purge and isinstance(result.data, int):
+            purge_line = f"Purged {result.data} message(s).\n"
+        else:
+            purge_line = ""
+
+        subtitle = (
+            f"{purge_line}"
+            f"{format_table(table)}"
+        )
+
+        footer = (
+            "\n"
+            "-#"
+        ).join(notes)
+
+        if all(statuses):
+            title    = f"The {self.name} was successful."
+            msg_type = MessageType.success
+        elif any(statuses):
+            title    = f"The {self.name} was partially successful."
+            msg_type = MessageType.warning
+        else:
+            title    = f"The {self.name} failed."
+            msg_type = MessageType.error
+
+        result_view = View()
+        result_view.add_item(
+            TextDisplay(
+                format_message(
+                    msg_type,
+                    title    = title,
+                    subtitle = subtitle,
+                    footer   = footer,
+                    override = FormatOverride(
+                        prefix      = False,
+                        punctuation = PunctuationOverride(
+                            title  = False,
+                            footer = False,
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        return result_view
+
+    @override
+    async def on_submit(self, interaction : Interaction) -> None:
+        modal = self
+
+        self._update_defaults()
+
+        reason = self._reason.value
+        length = self._length.value if self.action_type == ActionType.timeout_add else None
+        dtd    = self._dtd.value    if self.action_type == ActionType.ban_add     else None
+        force  = self._force.value  if self.action_type == ActionType.purge       else False
+        dm     = self._dm.value     if self.has_dm                                else False
+
+        amount : int | None = None
+
+        await interaction.response.defer(ephemeral = True)
+
+        if self.action_type == ActionType.purge:
+            amount = await self._validate_purge(interaction, force = force)
+            if amount is None:
+                return
+
+        summary = self._build_summary(
+            reason = reason,
+            length = length,
+            dtd    = dtd,
+            amount = amount,
+            force  = force,
+            dm     = dm,
+        )
 
         class EditOrExecuteRow(ActionRow["ModerationView"]):
             @button(label = "Edit", style = ButtonStyle.grey)
@@ -411,7 +639,6 @@ class _ModerationModal(Modal):
 
             @button(label = "Execute", style = ButtonStyle.red)
             async def btn_execute(self, interaction : Interaction, _button : Button[ModerationView]) -> None:
-                client = interaction.client
                 moderator = interaction.user
 
                 await interaction.response.defer(ephemeral = True)
@@ -420,214 +647,18 @@ class _ModerationModal(Modal):
                 if not guild or not isinstance(moderator, Member):
                     return
 
-                actions = Actions(client, guild)
-
-                match modal.action_type:
-                    case ActionType.lockdown_add:
-                        if not isinstance(modal.target, GuildMessageableChannel):
-                            return
-
-                        result = await actions.lockdown_add(
-                            LockdownAddPayload(
-                                moderator = moderator,
-                                channel   = modal.target,
-                                reason    = reason,
-                            ),
-                        )
-                    case ActionType.lockdown_remove:
-                        if not isinstance(modal.target, GuildMessageableChannel):
-                            return
-
-                        result = await actions.lockdown_remove(
-                            LockdownRemovePayload(
-                                moderator = moderator,
-                                channel   = modal.target,
-                                reason    = reason,
-                            ),
-                        )
-                    case ActionType.ban_add:
-                        if not isinstance(modal.target, Member):
-                            return
-
-                        seconds_to_delete = 7 * 86400
-                        if dtd is not None:
-                            with suppress(ValueError):
-                                seconds_to_delete = int(dtd) * 86400
-
-                        result = await actions.ban_add(
-                            BanAddPayload(
-                                moderator         = moderator,
-                                target            = modal.target,
-                                reason            = reason,
-                                dm_user           = dm,
-                                seconds_to_delete = seconds_to_delete,
-                            ),
-                        )
-                    case ActionType.ban_remove:
-                        if not isinstance(modal.target, User):
-                            return
-
-                        result = await actions.ban_remove(
-                            BanRemovePayload(
-                                moderator = moderator,
-                                target    = modal.target,
-                                reason    = reason,
-                                dm_user   = dm,
-                            ),
-                        )
-                    case ActionType.kick:
-                        if not isinstance(modal.target, Member):
-                            return
-
-                        result = await actions.kick(
-                            KickPayload(
-                                moderator = moderator,
-                                target    = modal.target,
-                                reason    = reason,
-                                dm_user   = dm,
-                            ),
-                        )
-                    case ActionType.quarantine_add:
-                        if not isinstance(modal.target, Member):
-                            return
-
-                        result = await actions.quarantine_add(
-                            QuarantineAddPayload(
-                                moderator = moderator,
-                                target    = modal.target,
-                                reason    = reason,
-                                dm_user   = dm,
-                            ),
-                        )
-                    case ActionType.quarantine_remove:
-                        if not isinstance(modal.target, Member):
-                            return
-
-                        result = await actions.quarantine_remove(
-                            QuarantineRemovePayload(
-                                moderator = moderator,
-                                target    = modal.target,
-                                reason    = reason,
-                                dm_user   = dm,
-                            ),
-                        )
-                    case ActionType.timeout_add:
-                        if not isinstance(modal.target, Member):
-                            return
-
-                        try:
-                            timeout_length = int(length) if length is not None else 0
-                        except ValueError:
-                            timeout_length = 0
-
-                        result = await actions.timeout_add(
-                            TimeoutAddPayload(
-                                moderator = moderator,
-                                target    = modal.target,
-                                reason    = reason,
-                                dm_user   = dm,
-                                length    = timeout_length,
-                            ),
-                        )
-                    case ActionType.timeout_remove:
-                        if not isinstance(modal.target, Member):
-                            return
-
-                        result = await actions.timeout_remove(
-                            TimeoutRemovePayload(
-                                moderator = moderator,
-                                target    = modal.target,
-                                reason    = reason,
-                                dm_user   = dm,
-                            ),
-                        )
-                    case ActionType.purge:
-                        if not isinstance(modal.target, GuildMessageable):
-                            return
-
-                        result = await actions.purge(
-                            PurgePayload(
-                                moderator = moderator,
-                                target    = purge_member,
-                                reason    = reason,
-                                channel   = modal.target,
-                                amount    = amount or 0,
-                                force     = force,
-                            ),
-                        )
-
-                table : dict[str, str] = {}
-                statuses : list[bool] = []
-
-                notes : list[str] = []
-                if not result.failed:
-                    table[modal.action_type.readable] = f"{ACCEPTED_EMOJI} Success."
-                    statuses.append(True)
-                else:
-                    table[modal.action_type.readable] = f"{DENIED_EMOJI} Failure."
-                    statuses.append(False)
-
-                if result.dmed is True:
-                    table["DMed Member"] = f"{ACCEPTED_EMOJI} Success."
-                    statuses.append(True)
-                elif result.dmed is False:
-                    table["DMed Member"] = f"{DENIED_EMOJI} Failure."
-                    statuses.append(False)
-                    notes.append("**DMed Member:** This failed because the target has their DMs closed.")
-
-                if result.logged is True:
-                    table["Logged"] = f"{ACCEPTED_EMOJI} Success."
-                    statuses.append(True)
-                elif result.logged is False:
-                    table["Logged"] = f"{DENIED_EMOJI} Failure."
-                    statuses.append(False)
-
-                    if not await client.config(guild).get_moderation_logging_channel():
-                        notes.append("**Logged:** This server has not set up a logging channel for moderation.")
-
-                if modal.action_type == ActionType.purge and isinstance(result.data, int):
-                    purge_line = f"Purged {result.data} message(s).\n"
-                else:
-                    purge_line = ""
-
-                subtitle = (
-                    f"{purge_line}"
-                    f"{format_table(table)}"
+                result = await modal._execute(
+                    Actions(interaction.client, guild),
+                    moderator,
+                    reason = reason,
+                    length = length,
+                    dtd    = dtd,
+                    dm     = dm,
+                    amount = amount,
+                    force  = force,
                 )
 
-                footer = (
-                    "\n"
-                    "-#"
-                ).join(notes)
-
-                if all(statuses):
-                    title    = f"The {modal.name} was successful."
-                    msg_type = MessageType.success
-                elif any(statuses):
-                    title    = f"The {modal.name} was partially successful."
-                    msg_type = MessageType.warning
-                else:
-                    title    = f"The {modal.name} failed."
-                    msg_type = MessageType.error
-
-                result_view = View()
-                result_view.add_item(
-                    TextDisplay(
-                        format_message(
-                            msg_type,
-                            title    = title,
-                            subtitle = subtitle,
-                            footer   = footer,
-                            override = FormatOverride(
-                                prefix      = False,
-                                punctuation = PunctuationOverride(
-                                    title  = False,
-                                    footer = False,
-                                ),
-                            ),
-                        ),
-                    ),
-                )
+                result_view = await modal._build_result_view(interaction, guild, result)
 
                 await interaction.edit_original_response(view = result_view)
 

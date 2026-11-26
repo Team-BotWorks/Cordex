@@ -86,6 +86,121 @@ def _member_section(title : str, members : Sequence[Member]) -> str | None:
     )
 
 
+def _format_auto_archive(archive_minutes : int) -> str:
+    if archive_minutes >= 1440:
+        days = archive_minutes // 1440
+        s = "s" if days != 1 else ""
+        return f"{days} day{s}"
+
+    hours = archive_minutes // 60
+    s = "s" if hours != 1 else ""
+    return f"{hours} hour{s}"
+
+
+def _build_header(target : GuildChannel, thread_target : Thread | None) -> str:
+    channel_type_emoji = _get_channel_emoji(target)
+
+    if thread_target:
+        emoji_display = (
+            f"| {channel_type_emoji} {RIGHTWARDS_ARROW_EMOJI} {THREAD_EMOJI} "
+            if channel_type_emoji else
+            f"| {THREAD_EMOJI} "
+        )
+        return f"### {thread_target.mention} {emoji_display}| {thread_target.id}"
+
+    emoji_display = f"| {channel_type_emoji} " if channel_type_emoji else ""
+    mention       = target.mention if not isinstance(target, CategoryChannel) else target.name
+    return f"### {mention} {emoji_display}| {target.id}"
+
+
+def _build_thread_info(parent : GuildChannel, thread : Thread) -> dict[str, str]:
+    nsfw = parent.nsfw if isinstance(parent, TextChannel | ForumChannel) else False
+    owner_mention = (
+        thread.owner.mention
+        if thread.owner else
+        (f"<@{thread.owner_id}>" if thread.owner_id else "Unknown")
+    )
+
+    info = {
+        "Parent"            : parent.mention,
+        "Owner"             : owner_mention,
+        "Not Safe for Work" : "Yes" if nsfw else "No",
+        "Locked"            : "Yes" if thread.locked else "No",
+        "Archived"          : "Yes" if thread.archived else "No",
+        "Auto Archive"      : _format_auto_archive(thread.auto_archive_duration),
+        "Last Modified"     : f"{format_dt(thread.archive_timestamp, style = "F")} | {format_dt(thread.archive_timestamp, style = "R")}",
+        "Created at"        : f"{format_dt(thread.created_at, style = "F")} | {format_dt(thread.created_at, style = "R")}" if thread.created_at else "Unknown",
+    }
+
+    if thread.applied_tags:
+        info["Tags"] = ", ".join(tag.name for tag in thread.applied_tags)
+
+    return info
+
+
+def _build_category_info(category : CategoryChannel) -> dict[str, str]:
+    return {
+        "Channels"   : str(len(category.channels)),
+        "Created at" : f"{format_dt(category.created_at, style = "F")} | {format_dt(category.created_at, style = "R")}",
+    }
+
+
+def _build_channel_info(target : GuildChannel) -> dict[str, str]:
+    nsfw = target.nsfw if isinstance(target, TextChannel | VoiceChannel | StageChannel | ForumChannel) else False
+
+    info : dict[str, str] = {
+        "Not Safe for Work" : "Yes" if nsfw else "No",
+        "Category"          : f"{target.category.name} | {target.category.id}" if target.category else "None",
+        "Created at"        : f"{format_dt(target.created_at, style = "F")} | {format_dt(target.created_at, style = "R")}",
+    }
+
+    if isinstance(target, TextChannel):
+        info["Slowmode"] = f"{target.slowmode_delay} seconds" if target.slowmode_delay else "Off"
+    elif isinstance(target, ForumChannel):
+        info["Slowmode"] = f"{target.slowmode_delay} seconds" if target.slowmode_delay else "Off"
+        if target.available_tags:
+            info["Tags"] = ", ".join(tag.name for tag in target.available_tags)
+    elif isinstance(target, VoiceChannel | StageChannel):
+        info["User Limit"] = str(target.user_limit) if target.user_limit else "Unlimited"
+        info["Bitrate"]    = f"{target.bitrate // 1000} kbps"
+
+    return info
+
+
+def _build_sections(target : GuildChannel, thread_target : Thread | None) -> list[str]:
+    sections : list[str] = []
+
+    topic = target.topic if isinstance(target, TextChannel | StageChannel | ForumChannel) else None
+    if topic:
+        sections.append(
+            "**Description**\n"
+           f">>> {topic}",
+        )
+
+    if thread_target:
+        return sections
+
+    if isinstance(target, CategoryChannel) and target.channels:
+        channel_list = "\n".join(f"{_get_channel_emoji(channel)} {channel.mention} | {channel.id}" for channel in target.channels)
+        sections.append(
+            f"**Channels**\n"
+            f"{channel_list}",
+        )
+    elif isinstance(target, VoiceChannel):
+        if member_section := _member_section("Member", target.members):
+            sections.append(member_section)
+    elif isinstance(target, StageChannel):
+        sections.extend(
+            section for section in (
+                _member_section("Speaker",   target.speakers),
+                _member_section("Moderator", target.moderators),
+                _member_section("Listener",  target.listeners),
+            ) if section
+        )
+
+    return sections
+
+
 async def run_channel_info(interaction : Interaction, channel : GuildChannel | Thread | None = None) -> None:
     """
     View information for a channel.
@@ -102,104 +217,28 @@ async def run_channel_info(interaction : Interaction, channel : GuildChannel | T
     if not interaction.guild or not isinstance(interaction.channel, GuildChannel | Thread):
         return
 
-    target = channel or interaction.channel
+    raw_target    = channel or interaction.channel
     thread_target : Thread | None = None
 
-    if isinstance(target, Thread):
-        thread_target = target
-        target = target.parent
+    if isinstance(raw_target, Thread):
+        thread_target = raw_target
+        target        = raw_target.parent
+    else:
+        target = raw_target
 
     if not isinstance(target, GuildChannel):
         return
 
-    channel_type_emoji = _get_channel_emoji(target)
-
-    # ⸻ Build the view.
+    header_text = _build_header(target, thread_target)
 
     if thread_target:
-        emoji_display = f"| {channel_type_emoji} {RIGHTWARDS_ARROW_EMOJI} {THREAD_EMOJI} " if channel_type_emoji else f"| {THREAD_EMOJI} "
-        header_text   = f"### {thread_target.mention} {emoji_display}| {thread_target.id}"
-    else:
-        emoji_display = f"| {channel_type_emoji} " if channel_type_emoji else ""
-        mention       = target.mention if not isinstance(target, CategoryChannel) else target.name
-        header_text   = f"### {mention} {emoji_display}| {target.id}"
-
-    nsfw  = target.nsfw  if isinstance(target, TextChannel | VoiceChannel | StageChannel | ForumChannel) else False
-    topic = target.topic if isinstance(target, TextChannel | StageChannel | ForumChannel)                else None
-
-    info     : dict[str, str]
-    sections : list[str] = []
-
-    if topic:
-        sections.append(
-            "**Description**\n"
-           f">>> {topic}",
-        )
-
-    if thread_target:
-        archive_minutes = thread_target.auto_archive_duration
-
-        auto_archive = (
-            f"{archive_minutes // 1440} day{"s" if archive_minutes != 1440 else ""}"
-            if archive_minutes >= 1440 else
-            f"{archive_minutes // 60} hour{"s" if archive_minutes != 60 else ""}"
-        )
-
-        info = {
-            "Parent"            : target.mention,
-            "Owner"             : f"<@{thread_target.owner.mention if thread_target.owner else thread_target.owner_id}>",
-            "Not Safe for Work" :  "Yes" if nsfw else "No",
-            "Locked"            :  "Yes" if thread_target.locked else "No",
-            "Archived"          :  "Yes" if thread_target.archived else "No",
-            "Auto Archive"      : auto_archive,
-            "Last Modified"     : f"{format_dt(thread_target.archive_timestamp, style = "F")} | {format_dt(thread_target.archive_timestamp, style = "R")}",
-            "Created at"        : f"{format_dt(thread_target.created_at, style = "F")} | {format_dt(thread_target.created_at, style = "R")}" if thread_target.created_at else "Unknown",
-        }
-
-        if thread_target.applied_tags:
-            info["Tags"] = ", ".join(tag.name for tag in thread_target.applied_tags)
+        info = _build_thread_info(target, thread_target)
     elif isinstance(target, CategoryChannel):
-        info = {
-            "Channels"   : str(len(target.channels)),
-            "Created at" : f"{format_dt(target.created_at, style = "F")} | {format_dt(target.created_at, style = "R")}",
-        }
-
-        if target.channels:
-            channel_list = "\n".join(f"{_get_channel_emoji(channel)} {channel.mention} | {channel.id}" for channel in target.channels)
-            sections.append(
-                f"**Channels**\n"
-                f"{channel_list}",
-            )
+        info = _build_category_info(target)
     else:
-        info = {
-            "Not Safe for Work" :  "Yes" if nsfw else "No",
-            "Category"          : f"{target.category.name} | {target.category.id}" if target.category else "None",
-            "Created at"        : f"{format_dt(target.created_at, style = "F")} | {format_dt(target.created_at, style = "R")}",
-        }
+        info = _build_channel_info(target)
 
-        if isinstance(target, TextChannel):
-            info["Slowmode"] = f"{target.slowmode_delay} seconds" if target.slowmode_delay else "Off"
-        elif isinstance(target, ForumChannel):
-            info["Slowmode"] = f"{target.slowmode_delay} seconds" if target.slowmode_delay else "Off"
-            if target.available_tags:
-                info["Tags"] = ", ".join(tag.name for tag in target.available_tags)
-        elif isinstance(target, VoiceChannel):
-            info["User Limit"] = str(target.user_limit) if target.user_limit else "Unlimited"
-            info["Bitrate"]    = f"{target.bitrate // 1000} kbps"
-
-            if member_section := _member_section("Member", target.members):
-                sections.append(member_section)
-        elif isinstance(target, StageChannel):
-            info["User Limit"] = str(target.user_limit) if target.user_limit else "Unlimited"
-            info["Bitrate"]    = f"{target.bitrate // 1000} kbps"
-
-            sections.extend(
-                section for section in (
-                    _member_section("Speaker",   target.speakers),
-                    _member_section("Moderator", target.moderators),
-                    _member_section("Listener",  target.listeners),
-                ) if section
-            )
+    sections = _build_sections(target, thread_target)
 
     @final
     class InfoView(View):

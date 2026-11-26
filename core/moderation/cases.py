@@ -265,38 +265,41 @@ class CaseManager:
     # create
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
-    async def create(self, payload : Payloads, /) -> _CreateCaseResult:
-        """
-        Create and log a case based off of a payload.
+    async def _find_related_case_id(
+        self,
+        action_type : str,
+        target_id   : int | None,
+        channel_id  : int | None,
+        /,
+    ) -> int | None:
+        if not action_type.endswith("remove"):
+            return None
 
-        Parameters
-        ----------
-        payload : `Payloads`
-            The payload to create the case for.
-        /
+        guild_id      = self.guild.id
+        corresponding = action_type.replace("remove", "add")
 
-        Returns
-        -------
-        `CreateCaseResult`
-            The case created (`.case`) as well as a boolean status of whether the logging *and* database creation were successful (`.successful`). A case can still be created while `.successful` is False, but never vice versa.
-        """
-        log_channel = await self.bot.config(self.guild).get_moderation_logging_channel()
-        if not log_channel:
-            return _CreateCaseResult(
-                successful = False,
-                case       = None,
-            )
+        if target_id is not None:
+            async with self.bot.db.execute(
+                t"SELECT id FROM Cases WHERE guild_id = {guild_id} AND target_id = {target_id} AND action_type = {corresponding} AND expired = 0 ORDER BY id DESC LIMIT 1",
+            ) as cursor:
+                row = await cursor.fetchone()
+        elif channel_id is not None:
+            async with self.bot.db.execute(
+                t"SELECT id FROM Cases WHERE guild_id = {guild_id} AND channel_id = {channel_id} AND action_type = {corresponding} AND expired = 0 ORDER BY id DESC LIMIT 1",
+            ) as cursor:
+                row = await cursor.fetchone()
+        else:
+            return None
 
-        data = CASE_MAP[type(payload)]
+        return cast("int", row[0]) if row is not None else None
 
-        # ⸻ Save the case.
-
-        action_type = type(payload).__name__.replace("Payload", "").lower()
-        guild_id = self.guild.id
+    async def _save_case(self, payload : Payloads, /) -> Case | None:
+        action_type  = type(payload).__name__.replace("Payload", "").lower()
+        guild_id     = self.guild.id
         moderator_id = payload.moderator.id
-        reason = payload.reason
+        reason       = payload.reason
 
-        target_id = payload.target.id if not isinstance(payload, LockdownAddPayload | LockdownRemovePayload) and payload.target is not None else None
+        target_id  = payload.target.id if not isinstance(payload, LockdownAddPayload | LockdownRemovePayload) and payload.target is not None else None
         channel_id = payload.channel.id if isinstance(payload, PurgePayload | LockdownAddPayload | LockdownRemovePayload) else None
 
         dm_user           = None
@@ -304,13 +307,12 @@ class CaseManager:
         timeout_length    = None
         purge_amount      = None
         purge_force       = None
-        related_case_id   = None
 
         if isinstance(payload, BanAddPayload):
-            dm_user = int(payload.dm_user)
+            dm_user           = int(payload.dm_user)
             seconds_to_delete = payload.seconds_to_delete
         elif isinstance(payload, TimeoutAddPayload):
-            dm_user = int(payload.dm_user)
+            dm_user        = int(payload.dm_user)
             timeout_length = payload.length
         elif isinstance(payload, QuarantineAddPayload | KickPayload | BanRemovePayload | TimeoutRemovePayload | QuarantineRemovePayload):
             dm_user = int(payload.dm_user)
@@ -318,41 +320,15 @@ class CaseManager:
             purge_amount = payload.amount
             purge_force  = int(payload.force)
 
-        if action_type.endswith("remove") and (target_id is not None or channel_id is not None):
-            corresponding = action_type.replace("remove", "add")
-            if target_id is not None:
-                try:
-                    async with self.bot.db.execute(
-                        t"SELECT id FROM Cases WHERE guild_id = {guild_id} AND target_id = {target_id} AND action_type = {corresponding} AND expired = 0 ORDER BY id DESC LIMIT 1",
-                    ) as cursor:
-                        row = await cursor.fetchone()
-                except Exception:
-                    self._log_failure("case database creation")
-                    return _CreateCaseResult(
-                        successful = False,
-                        case       = None,
-                    )
-                if row is not None:
-                    related_case_id = cast("int", row[0])
-            elif channel_id is not None:
-                try:
-                    async with self.bot.db.execute(
-                        t"SELECT id FROM Cases WHERE guild_id = {guild_id} AND channel_id = {channel_id} AND action_type = {corresponding} AND expired = 0 ORDER BY id DESC LIMIT 1",
-                    ) as cursor:
-                        row = await cursor.fetchone()
-                except Exception:
-                    self._log_failure("case database creation")
-                    return _CreateCaseResult(
-                        successful = False,
-                        case       = None,
-                    )
-
-                if row is not None:
-                    related_case_id = cast("int", row[0])
+        try:
+            related_case_id = await self._find_related_case_id(action_type, target_id, channel_id)
+        except Exception:
+            self._log_failure("case database creation")
+            return None
 
         try:
             cursor = await self.bot.db.execute(
-               t"""
+                t"""
                 INSERT INTO Cases (
                     guild_id, action_type, moderator_id, target_id, reason,
                     dm_user, seconds_to_delete, timeout_length, channel_id, purge_amount, purge_force, related_case_id
@@ -365,16 +341,10 @@ class CaseManager:
             new_case_id = cursor.lastrowid
         except Exception:
             self._log_failure("case database creation")
-            return _CreateCaseResult(
-                successful = False,
-                case       = None,
-            )
+            return None
 
         if not new_case_id:
-            return _CreateCaseResult(
-                successful = False,
-                case       = None,
-            )
+            return None
 
         try:
             await self.bot.db.execute(
@@ -383,15 +353,61 @@ class CaseManager:
             await self.bot.db.commit()
         except Exception:
             self._log_failure("case database creation")
-            return _CreateCaseResult(
-                successful = False,
-                case       = None,
-            )
+            return None
 
-        successful = True
+        return Case(
+            id                = new_case_id,
+            action_type       = ActionType.from_sql(action_type),
+            guild             = self.guild,
+            moderator         = payload.moderator,
+            target            = (
+                payload.target if not
+                isinstance(payload, LockdownAddPayload | LockdownRemovePayload) and
+                isinstance(payload.target, Member | User) else None
+            ),
+            reason            = reason,
+            channel           = payload.channel if isinstance(payload, PurgePayload | LockdownAddPayload | LockdownRemovePayload) else None,
+            created_at        = datetime.now(UTC),
+            dm_user           = bool(dm_user) if dm_user is not None else None,
+            seconds_to_delete = seconds_to_delete,
+            timeout_length    = timeout_length,
+            purge_amount      = purge_amount,
+            purge_force       = bool(purge_force) if purge_force is not None else None,
+            expired           = False,
+            related_case_id   = related_case_id,
+        )
 
-        view = View()
-        container = Container[view](TextDisplay(f"# {data.title} | #{new_case_id}"), color = data.color)
+    def _build_details(self, payload : Payloads, /) -> dict[str, object]:
+        details : dict[str, object] = {}
+
+        if isinstance(payload, BanAddPayload):
+            details["Message Delete History"] = f"{payload.seconds_to_delete} seconds"
+        elif isinstance(payload, TimeoutAddPayload):
+            details["Duration"] = f"{payload.length} seconds"
+        elif isinstance(payload, LockdownAddPayload | LockdownRemovePayload):
+            details["Channel"] = payload.channel.mention
+        elif isinstance(payload, PurgePayload):
+            details["Channel"] = payload.channel.mention
+            details["Amount"]  = payload.amount
+            details["Forced"]  = payload.force
+
+        if isinstance(
+            payload,
+            BanAddPayload
+            | QuarantineAddPayload
+            | KickPayload
+            | TimeoutAddPayload
+            | BanRemovePayload
+            | QuarantineRemovePayload
+            | TimeoutRemovePayload,
+        ):
+            details["DM Sent"] = payload.dm_user
+
+        return details
+
+    async def _build_view(self, payload : Payloads, case_id : int, data : _CaseData, /) -> View:
+        view      = View()
+        container = Container[view](TextDisplay(f"# {data.title} | #{case_id}"), color = data.color)
 
         # ⸻ Add the target information.
 
@@ -464,35 +480,9 @@ class CaseManager:
             else:
                 container.add_text(moderator_info)
 
-        # ⸻ Case details.
-
-        details : dict[str, object] = {}
-
-        if isinstance(payload, BanAddPayload):
-            details["Message Delete History"] = f"{payload.seconds_to_delete} seconds"
-        elif isinstance(payload, TimeoutAddPayload):
-            details["Duration"] = f"{payload.length} seconds"
-        elif isinstance(payload, LockdownAddPayload | LockdownRemovePayload):
-            details["Channel"] = payload.channel.mention
-        elif isinstance(payload, PurgePayload):
-            details["Channel"] = payload.channel.mention
-            details["Amount"]  = payload.amount
-            details["Forced"]  = payload.force
-
-        if isinstance(
-            payload,
-            BanAddPayload
-            | QuarantineAddPayload
-            | KickPayload
-            | TimeoutAddPayload
-            | BanRemovePayload
-            | QuarantineRemovePayload
-            | TimeoutRemovePayload,
-        ):
-            details["DM Sent"] = payload.dm_user
-
         # ⸻ Add the case details.
 
+        details = self._build_details(payload)
         if details:
             container.add_items(
                 VisibleLargeSeparator(),
@@ -521,6 +511,41 @@ class CaseManager:
 
         view.add_item(container)
 
+        return view
+
+    async def create(self, payload : Payloads, /) -> _CreateCaseResult:
+        """
+        Create and log a case based off of a payload.
+
+        Parameters
+        ----------
+        payload : `Payloads`
+            The payload to create the case for.
+        /
+
+        Returns
+        -------
+        `CreateCaseResult`
+            The case created (`.case`) as well as a boolean status of whether the logging *and* database creation were successful (`.successful`). A case can still be created while `.successful` is False, but never vice versa.
+        """
+        log_channel = await self.bot.config(self.guild).get_moderation_logging_channel()
+        if not log_channel:
+            return _CreateCaseResult(
+                successful = False,
+                case       = None,
+            )
+
+        data = CASE_MAP[type(payload)]
+
+        case = await self._save_case(payload)
+        if case is None:
+            return _CreateCaseResult(
+                successful = False,
+                case       = None,
+            )
+
+        view = await self._build_view(payload, case.id, data)
+
         # ⸻ Log the case.
 
         try:
@@ -536,33 +561,13 @@ class CaseManager:
         except HTTPException:
             self._log_failure("case logging")
             return _CreateCaseResult(
-                successful = successful,
+                successful = True,
                 case       = None,
             )
 
         return _CreateCaseResult(
-            successful = successful,
-            case       = Case(
-                id                = new_case_id,
-                action_type       = ActionType.from_sql(action_type),
-                guild             = self.guild,
-                moderator         = payload.moderator,
-                target            = (
-                    payload.target if not
-                    isinstance(payload, LockdownAddPayload | LockdownRemovePayload) and
-                    isinstance(payload.target, Member | User) else None
-                ),
-                reason            = reason,
-                channel           = payload.channel if isinstance(payload, PurgePayload | LockdownAddPayload | LockdownRemovePayload) else None,
-                created_at        = datetime.now(UTC),
-                dm_user           = bool(dm_user) if dm_user is not None else None,
-                seconds_to_delete = seconds_to_delete,
-                timeout_length    = timeout_length,
-                purge_amount      = purge_amount,
-                purge_force       = bool(purge_force) if purge_force is not None else None,
-                expired           = False,
-                related_case_id   = related_case_id,
-            ),
+            successful = True,
+            case       = case,
         )
 
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻

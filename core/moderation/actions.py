@@ -149,7 +149,9 @@ class ActionType(Enum):
 
 
 @dataclass(frozen = True, slots = True)
-class _ActionResult[T = None]:
+class ActionResult[T = None]:
+    """The result of a moderation aaction."""
+
     failed  : bool
     logged  : bool
     dmed    : bool | None
@@ -261,7 +263,7 @@ class Actions:
     # lockdown_add
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
-    async def lockdown_add(self, action : LockdownAddPayload, /) -> _ActionResult:
+    async def lockdown_add(self, action : LockdownAddPayload, /) -> ActionResult:
         """
         Place a channel in lockdown.
 
@@ -301,7 +303,7 @@ class Actions:
 
         case = await self.cases.create(action)
 
-        return _ActionResult(
+        return ActionResult(
             failed = failed,
             logged = case.successful,
             dmed   = None,
@@ -361,7 +363,7 @@ class Actions:
     # lockdown_remove
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
-    async def lockdown_remove(self, action : LockdownRemovePayload, /) -> _ActionResult:
+    async def lockdown_remove(self, action : LockdownRemovePayload, /) -> ActionResult:
         """
         Remove a channel from lockdown.
 
@@ -399,7 +401,7 @@ class Actions:
 
         case = await self.cases.create(action)
 
-        return _ActionResult(
+        return ActionResult(
             failed = failed,
             logged = case.successful,
             dmed   = None,
@@ -409,7 +411,7 @@ class Actions:
     # ban_add
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
-    async def ban_add(self, action : BanAddPayload, /) -> _ActionResult:
+    async def ban_add(self, action : BanAddPayload, /) -> ActionResult:
         """
         Ban a member from the server. This also removes the target's quarantine, if applicable.
 
@@ -441,7 +443,7 @@ class Actions:
 
         case = await self.cases.create(action)
 
-        return _ActionResult(
+        return ActionResult(
             failed = failed,
             logged = case.successful,
             dmed   = success,
@@ -503,7 +505,7 @@ class Actions:
     # ban_remove
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
-    async def ban_remove(self, action : BanRemovePayload, /) -> _ActionResult:
+    async def ban_remove(self, action : BanRemovePayload, /) -> ActionResult:
         """
         Remove a ban from a member.
 
@@ -535,7 +537,7 @@ class Actions:
 
         case = await self.cases.create(action)
 
-        return _ActionResult(
+        return ActionResult(
             failed = failed,
             logged = case.successful,
             dmed   = success,
@@ -545,7 +547,7 @@ class Actions:
     # kick
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
-    async def kick(self, action : KickPayload, /) -> _ActionResult:
+    async def kick(self, action : KickPayload, /) -> ActionResult:
         """
         Kick a member from the server.
 
@@ -577,7 +579,7 @@ class Actions:
 
         case = await self.cases.create(action)
 
-        return _ActionResult(
+        return ActionResult(
             failed = failed,
             logged = case.successful,
             dmed   = success,
@@ -587,7 +589,7 @@ class Actions:
     # quarantine_add
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
-    async def quarantine_add(self, action : QuarantineAddPayload, /) -> _ActionResult:
+    async def quarantine_add(self, action : QuarantineAddPayload, /) -> ActionResult:
         """
         Place a member in quarantine.
 
@@ -604,7 +606,7 @@ class Actions:
         """
         quarantine_role = await self.config.get_moderation_quarantine_role()
         if not quarantine_role:
-            return _ActionResult(
+            return ActionResult(
                 failed = True,
                 logged = False,
                 dmed   = False,
@@ -628,7 +630,7 @@ class Actions:
 
         case = await self.cases.create(action)
 
-        return _ActionResult(
+        return ActionResult(
             failed = failed,
             logged = case.successful,
             dmed   = success,
@@ -678,7 +680,7 @@ class Actions:
     # quarantine_remove
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
-    async def quarantine_remove(self, action : QuarantineRemovePayload, /) -> _ActionResult:
+    async def quarantine_remove(self, action : QuarantineRemovePayload, /) -> ActionResult:
         """
         Remove a member from quarantine.
 
@@ -695,7 +697,7 @@ class Actions:
         """
         quarantine_role = await self.config.get_moderation_quarantine_role()
         if not quarantine_role:
-            return _ActionResult(
+            return ActionResult(
                 failed = True,
                 logged = False,
                 dmed   = False,
@@ -726,7 +728,7 @@ class Actions:
 
         case = await self.cases.create(action)
 
-        return _ActionResult(
+        return ActionResult(
             failed = failed,
             logged = case.successful,
             dmed   = success,
@@ -736,7 +738,7 @@ class Actions:
     # timeout_add
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
-    async def timeout_add(self, action : TimeoutAddPayload, /) -> _ActionResult:
+    async def timeout_add(self, action : TimeoutAddPayload, /) -> ActionResult:
         """
         Place a member in timeout.
 
@@ -768,7 +770,7 @@ class Actions:
 
         case = await self.cases.create(action)
 
-        return _ActionResult(
+        return ActionResult(
             failed = failed,
             logged = case.successful,
             dmed   = success,
@@ -835,7 +837,7 @@ class Actions:
     # timeout_remove
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
-    async def timeout_remove(self, action : TimeoutRemovePayload, /) -> _ActionResult:
+    async def timeout_remove(self, action : TimeoutRemovePayload, /) -> ActionResult:
         """
         Remove a member from timeout.
 
@@ -867,7 +869,7 @@ class Actions:
 
         case = await self.cases.create(action)
 
-        return _ActionResult(
+        return ActionResult(
             failed = failed,
             logged = case.successful,
             dmed   = success,
@@ -877,7 +879,7 @@ class Actions:
     # purge
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
 
-    async def purge(self, action : PurgePayload, /) -> _ActionResult[int]:
+    async def purge(self, action : PurgePayload, /) -> ActionResult[int]:
         """
         Purge messages.
 
@@ -939,7 +941,7 @@ class Actions:
 
         case = await self.cases.create(action)
 
-        return _ActionResult(
+        return ActionResult(
             failed = failed,
             logged = case.successful,
             dmed   = None,
