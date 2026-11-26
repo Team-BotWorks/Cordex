@@ -178,7 +178,7 @@ class ErrorLogger(Cog):
             allowed_mentions = AllowedMentions(users = False, roles = True),
         )
         if traceback:
-            await channel.send(file = File(BytesIO(traceback.encode())))
+            await channel.send(file = File(BytesIO(traceback.encode()), filename = "exception.py"))
 
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
     # Discord Event Errors
@@ -200,12 +200,10 @@ class ErrorLogger(Cog):
             )
             return
 
-        traceback = "".join(format_exception(exception))
-
         await self._send_error(
             title     =  "Bot Event Error",
             error     = f"{event}: {exception}",
-            traceback = traceback,
+            traceback = "".join(format_exception(exception)),
         )
 
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
@@ -277,16 +275,13 @@ class ErrorLogger(Cog):
             return
 
         await send_bad_operation(interaction)
-
-        traceback = "".join(format_exception(error))
-
         await self._send_error(
             title     = "Command Error",
             user      = interaction.user,
             guild     = interaction.guild,
             context   = interaction,
             error     = str(error),
-            traceback = traceback,
+            traceback = "".join(format_exception(error)),
         )
 
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
