@@ -1,5 +1,5 @@
 from ._base import Connection, connect
-from .blocklist import BlocklistManager
+from .blocklist import Block, BlocklistManager
 from .config import Config
 from .restrictions import (
     Restriction,
@@ -10,6 +10,7 @@ from .restrictions import (
 )
 
 __all__ = [
+    "Block",
     "BlocklistManager",
     "Config",
     "Connection",

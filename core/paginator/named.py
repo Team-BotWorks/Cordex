@@ -131,7 +131,7 @@ class NamedPaginator(InteractiveView):
             error = "data cannot contain more than 25 pages"
             raise ValueError(error)
 
-        self._pages       : list[PageData] = data or [PageData("No content available.", ["No content available."])]
+        self._pages       : list[PageData] = data
         self.current_page : int            = 0
 
         self._above_items : _ItemsList = []

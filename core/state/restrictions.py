@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import overload
 
 from discord import Member
-from discord.app_commands import Command, Group
+from discord.app_commands import Command
 from discord.ext.commands import Cog, GroupCog
 
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
@@ -55,14 +55,14 @@ class Restriction:
 
 
 @overload
-def unrestrictable[GroupT : Group | Cog, **P, T](target : Command[GroupT, P, T], /) -> Command[GroupT, P, T]: ...
+def unrestrictable[GroupT : Cog, **P, T](target : Command[GroupT, P, T], /) -> Command[GroupT, P, T]: ...
 
 @overload
 def unrestrictable[CogT : type[GroupCog]](target : CogT, /) -> CogT: ...
 
 
 def unrestrictable[
-    GroupT : Group | Cog,
+    GroupT : Cog,
     CogT   : type[GroupCog],
     **P,
     T,
@@ -91,13 +91,13 @@ def unrestrictable[
     return target
 
 
-def is_restrictable[GroupT : Group | Cog, **P, T](command : Command[GroupT, P, T] | Group, /) -> bool:
+def is_restrictable[GroupT : Cog, **P, T](command : Command[GroupT, P, T], /) -> bool:
     """
     Check if a command is restrictable.
 
     Parameters
     ----------
-    command : `Command[GroupT, P, T] | Group`
+    command : `Command[GroupT, P, T]`
         The command to check.
     /
 
@@ -106,9 +106,6 @@ def is_restrictable[GroupT : Group | Cog, **P, T](command : Command[GroupT, P, T
     `bool`
         Whether the command is restrictable or not.
     """
-    if isinstance(command, Group):
-        return False
-
     return command.extras.get("unrestrictable", False) is False
 
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
@@ -117,14 +114,14 @@ def is_restrictable[GroupT : Group | Cog, **P, T](command : Command[GroupT, P, T
 
 
 @overload
-def requires_restriction[GroupT : Group | Cog, **P, T](target : Command[GroupT, P, T], /) -> Command[GroupT, P, T]: ...
+def requires_restriction[GroupT : Cog, **P, T](target : Command[GroupT, P, T], /) -> Command[GroupT, P, T]: ...
 
 @overload
 def requires_restriction[CogT : type[GroupCog]](target : CogT, /) -> CogT: ...
 
 
 def requires_restriction[
-    GroupT : Group | Cog,
+    GroupT : Cog,
     CogT   : type[GroupCog],
     **P,
     T,
@@ -153,13 +150,13 @@ def requires_restriction[
     return target
 
 
-def is_restriction_required[GroupT : Group | Cog, **P, T](command : Command[GroupT, P, T] | Group, /) -> bool:
+def is_restriction_required[GroupT : Cog, **P, T](command : Command[GroupT, P, T], /) -> bool:
     """
     Check if a command requires restriction.
 
     Parameters
     ----------
-    command : `Command[GroupT, P, T] | Group`
+    command : `Command[GroupT, P, T]`
         The command to check.
     /
 
@@ -168,7 +165,4 @@ def is_restriction_required[GroupT : Group | Cog, **P, T](command : Command[Grou
     `bool`
         Whether the command requires restriction or not.
     """
-    if isinstance(command, Group):
-        return False
-
     return command.extras.get("requires_restriction", False) is True
