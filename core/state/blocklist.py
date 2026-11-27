@@ -43,7 +43,7 @@ class Block:
     @classmethod
     def from_target(cls, target : User | Guild, /) -> Self:
         """
-        Build an entry from an already resolved target.
+        Build a block from an already resolved target.
 
         Parameters
         ----------
@@ -53,8 +53,8 @@ class Block:
 
         Returns
         -------
-        `BlocklistEntry`
-            The entry describing the target.
+        `Block`
+            The block describing the target.
         """
         return cls(target.id, "guild" if isinstance(target, Guild) else "user", target)
 
@@ -64,12 +64,14 @@ class Block:
 
     @property
     def label(self) -> str:
-        """A markdown and mention safe display name for the target."""
+        """A mention for users, a markdown and mention safe name for guilds, or `Unknown User`/`Unknown Guild` if unresolved."""
         if self.target is None:
             return f"Unknown {self.target_type.title()}"
 
-        name = self.target.name if isinstance(self.target, Guild) else f"@{self.target.name}"
-        return escape_mentions(escape_markdown(name))
+        if isinstance(self.target, User):
+            return self.target.mention
+
+        return escape_mentions(escape_markdown(self.target.name))
 
     # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
     # summary
@@ -77,7 +79,7 @@ class Block:
 
     @property
     def summary(self) -> str:
-        """A description of the target including its type, name, and ID."""
+        """A description of the target including its type, label, and ID."""
         return f"{self.target_type} {self.label} ({self.target_id})"
 
 # ⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻
